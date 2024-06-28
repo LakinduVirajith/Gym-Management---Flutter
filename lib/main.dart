@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:gym_management/models/member.dart';
 import 'package:gym_management/pages/home.dart';
 import 'package:gym_management/pages/insert.dart';
 import 'package:gym_management/pages/list.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:toastification/toastification.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(MemberAdapter());
+  await Hive.openBox<Member>('members');
   runApp(const MyApp());
 }
 
@@ -13,19 +20,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Gym Management Application',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return ToastificationWrapper(
+      child: MaterialApp(
+        title: 'Gym Management Application',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          useMaterial3: true,
+        ),
+        home: const Main(),
       ),
-      home: const Main(),
     );
   }
 }
 
 class Main extends StatefulWidget {
   const Main({super.key});
+
+  static _MainState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_MainState>();
 
   @override
   State<Main> createState() => _MainState();
@@ -34,7 +46,7 @@ class Main extends StatefulWidget {
 class _MainState extends State<Main> {
   int _selectedIndex = 0;
 
-  void _navigate(int index) {
+  void navigate(int index) {
     setState(() {
       _selectedIndex = index;
     });
@@ -64,7 +76,8 @@ class _MainState extends State<Main> {
             tabBackgroundColor: Colors.white10,
             padding: const EdgeInsets.all(16.0),
             gap: 8,
-            onTabChange: _navigate,
+            selectedIndex: _selectedIndex,
+            onTabChange: navigate,
             tabs: const [
               GButton(
                 icon: Icons.home_rounded,
@@ -81,7 +94,7 @@ class _MainState extends State<Main> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black,
         onPressed: () {
-          _navigate(2);
+          navigate(2);
         },
         tooltip: 'Insert',
         shape: const CircleBorder(
