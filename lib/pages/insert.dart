@@ -53,46 +53,48 @@ class _InsertPageState extends State<InsertPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(48.0),
-        child: Column(
-          children: [
-            const Text(
-              'New Member',
-              style: TextStyle(
-                fontSize: 36.0,
-                fontWeight: FontWeight.w700,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(48.0),
+          child: Column(
+            children: [
+              const Text(
+                'New Member',
+                style: TextStyle(
+                  fontSize: 36.0,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: 24.0),
-            NormalInput(
-              placeholderText: 'Name',
-              icon: Icons.person,
-              normalController: _userNameController,
-            ),
-            const SizedBox(height: 12.0),
-            NumberInput(
-              placeholderText: 'Age',
-              icon: Icons.cake_rounded,
-              normalController: _ageController,
-            ),
-            const SizedBox(height: 12.0),
-            DateInput(
-              placeholderText: 'Start Date',
-              icon: Icons.calendar_view_day_rounded,
-              dateController: _startDateController,
-            ),
-            const SizedBox(height: 12.0),
-            DateInput(
-              placeholderText: 'Payment Date',
-              icon: Icons.calendar_view_day_rounded,
-              dateController: _paymentDateController,
-            ),
-            const SizedBox(height: 36.0),
-            NormalButton(buttonText: 'CLEAN', onPressed: _clean),
-            const SizedBox(height: 12.0),
-            NormalButton(buttonText: 'INSERT', onPressed: _create),
-          ],
+              const SizedBox(height: 24.0),
+              NormalInput(
+                placeholderText: 'Name',
+                icon: Icons.person,
+                normalController: _userNameController,
+              ),
+              const SizedBox(height: 12.0),
+              NumberInput(
+                placeholderText: 'Age',
+                icon: Icons.cake_rounded,
+                normalController: _ageController,
+              ),
+              const SizedBox(height: 12.0),
+              DateInput(
+                placeholderText: 'Start Date',
+                icon: Icons.calendar_view_day_rounded,
+                dateController: _startDateController,
+              ),
+              const SizedBox(height: 12.0),
+              DateInput(
+                placeholderText: 'Payment Date',
+                icon: Icons.calendar_view_day_rounded,
+                dateController: _paymentDateController,
+              ),
+              const SizedBox(height: 36.0),
+              NormalButton(buttonText: 'CLEAN', onPressed: _clean),
+              const SizedBox(height: 12.0),
+              NormalButton(buttonText: 'INSERT', onPressed: _create),
+            ],
+          ),
         ),
       ),
     );
