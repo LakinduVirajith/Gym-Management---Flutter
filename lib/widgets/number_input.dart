@@ -39,7 +39,6 @@ class NumberInput extends StatelessWidget {
                 hintStyle: const TextStyle(
                   color: Colors.black87,
                   fontSize: 14.0,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
