@@ -14,11 +14,11 @@ class Member extends HiveObject {
   String startDate;
 
   @HiveField(3)
-  String paymentDate;
+  String nextPayment;
 
   Member(
       {required this.name,
       required this.age,
       required this.startDate,
-      required this.paymentDate});
+      required this.nextPayment});
 }
