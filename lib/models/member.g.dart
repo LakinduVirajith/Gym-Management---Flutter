@@ -20,7 +20,7 @@ class MemberAdapter extends TypeAdapter<Member> {
       name: fields[0] as String,
       age: fields[1] as int,
       startDate: fields[2] as String,
-      paymentDate: fields[3] as String,
+      nextPayment: fields[3] as String,
     );
   }
 
@@ -35,7 +35,7 @@ class MemberAdapter extends TypeAdapter<Member> {
       ..writeByte(2)
       ..write(obj.startDate)
       ..writeByte(3)
-      ..write(obj.paymentDate);
+      ..write(obj.nextPayment);
   }
 
   @override
