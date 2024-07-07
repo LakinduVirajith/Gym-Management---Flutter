@@ -3,6 +3,7 @@ import 'package:gym_management/main.dart';
 import 'package:gym_management/models/member.dart';
 import 'package:gym_management/services/hive_service.dart';
 import 'package:gym_management/services/toast_service.dart';
+import 'package:gym_management/utils/date_utils.dart';
 import 'package:gym_management/widgets/date_input.dart';
 import 'package:gym_management/widgets/normal_button.dart';
 import 'package:gym_management/widgets/normal_input.dart';
@@ -33,26 +34,6 @@ class _InsertPageState extends State<InsertPage> {
     _startDateController.clear();
   }
 
-  // Method to add one month to a given date
-  DateTime _addOneMonth(DateTime date) {
-    int year = date.year;
-    int month = date.month + 1;
-    if (month > 12) {
-      month = 1;
-      year++;
-    }
-
-    // Handle February and end of month cases
-    int day = date.day;
-    int lastDayOfNextMonth =
-        DateTime(year, month + 1, 0).day; // Last day of next month
-    if (day > lastDayOfNextMonth) {
-      day = lastDayOfNextMonth;
-    }
-
-    return DateTime(year, month, day);
-  }
-
   // Method to create a new member
   Future<void> _create() async {
     if (_userNameController.text.isNotEmpty &&
@@ -60,7 +41,7 @@ class _InsertPageState extends State<InsertPage> {
         _startDateController.text.isNotEmpty) {
       // Parse start date and calculate next payment date
       DateTime startDate = DateTime.parse(_startDateController.text);
-      DateTime paymentDate = _addOneMonth(startDate);
+      DateTime paymentDate = AppDateUtils.addOneMonth(startDate);
       String formattedPaymentDate =
           DateFormat('yyyy-MM-dd').format(paymentDate);
 
