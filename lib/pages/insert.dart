@@ -56,16 +56,21 @@ class _InsertPageState extends State<InsertPage> {
       // Add the member to the Hive database
       try {
         await _hiveService.addMember(member);
-        _toastService.successToast('member added successfully');
+        _toastService.successToast('Member added successfully');
 
-        // Navigate to the member list page
-        Main.of(context)?.navigate(1);
+        // Navigate to the list page of members
+        _updateSelectedTabIndex(1);
       } catch (e) {
-        _toastService.errorToast('failed to add member');
+        _toastService.errorToast('Failed to add member');
       }
     } else {
-      _toastService.warningToast('please fill in all fields');
+      _toastService.warningToast('Please fill in all fields');
     }
+  }
+
+  // Method to update the selected bottom navigation tab index in the Main widget
+  void _updateSelectedTabIndex(int index) {
+    Main.of(context)?.navigate(index);
   }
 
   @override

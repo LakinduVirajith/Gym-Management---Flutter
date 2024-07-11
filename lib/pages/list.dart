@@ -63,15 +63,16 @@ class _ListPageState extends State<ListPage> {
   void _deleteMember(int index) async {
     try {
       await _hiveService.deleteMember(index);
-      _toastService.successToast('member deleted successfully');
+      _toastService.successToast('Member deleted successfully');
       _getMembers();
     } catch (e) {
-      _toastService.errorToast('failed to delete member');
+      _toastService.errorToast('Failed to delete member');
     }
   }
 
   // Show a confirmation dialog before deleting a member
-  void _showDeleteConfirmationDialog(BuildContext context, String name, int index) {
+  void _showDeleteConfirmationDialog(
+      BuildContext context, String name, int index) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
