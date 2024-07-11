@@ -57,10 +57,10 @@ class _HomePageState extends State<HomePage> {
 
     try {
       await _hiveService.updateMember(member.key, member);
-      _toastService.successToast('member updated successfully');
+      _toastService.successToast('Member updated successfully');
       _getMembers();
     } catch (e) {
-      _toastService.errorToast('failed to updated member');
+      _toastService.errorToast('Failed to updated member');
     }
   }
 
@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
           confirmationMessage: ConfirmationMessage(
             topic: 'Payment Confirmation',
             message:
-                'Are you sure you want to confirm $member.name\'s payment?',
+                'Are you sure you want to confirm ${member.name}\'s payment?',
             option1: 'No',
             option2: 'Yes',
           ),

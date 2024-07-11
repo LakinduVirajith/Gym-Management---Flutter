@@ -1,8 +1,8 @@
 class ConfirmationMessage {
-  String topic;
-  String message;
-  String option1;
-  String option2;
+  final String topic;
+  final String message;
+  final String option1;
+  final String option2;
 
   ConfirmationMessage({
     required this.topic,

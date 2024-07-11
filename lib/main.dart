@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:gym_management/models/member.dart';
 import 'package:gym_management/pages/home.dart';
@@ -6,6 +7,8 @@ import 'package:gym_management/pages/insert.dart';
 import 'package:gym_management/pages/list.dart';
 import 'package:gym_management/pages/payment.dart';
 import 'package:gym_management/pages/sign_up.dart';
+import 'package:gym_management/services/mongo_service.dart';
+import 'package:gym_management/services/toast_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
@@ -22,6 +25,12 @@ void main() async {
 
   // Open the Hive box named 'members' to store Member objects
   await Hive.openBox<Member>('members');
+
+  // Load the environment variables from the .env file to access configuration details
+  await dotenv.load(fileName: ".env");
+
+  // Call function to update last active time for the user
+  await updateLastActiveTime();
 
   // Run the app with MyApp as the root widget
   runApp(const MyApp());
@@ -49,29 +58,38 @@ class MyApp extends StatelessWidget {
 class Main extends StatefulWidget {
   const Main({super.key});
 
-  static _MainState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_MainState>();
+  static MainState? of(BuildContext context) =>
+      context.findAncestorStateOfType<MainState>();
 
   @override
-  State<Main> createState() => _MainState();
+  State<Main> createState() => MainState();
 }
 
-class _MainState extends State<Main> {
+class MainState extends State<Main> {
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _paymentVerifier();
+    _initializePaymentVerifier();
+  }
+
+  // Initializes the payment verifier by setting up SharedPreferences and ToastService
+  Future<void> _initializePaymentVerifier() async {
+    // Initialize SharedPreferences for local storage
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Initialize ToastService for displaying messages
+    final ToastService toastService = ToastService();
+
+    // Call paymentVerifier to check and handle payment due dates
+    await _paymentVerifier(prefs, toastService);
   }
 
   // Verifies and handles payment due dates
-  Future<void> _paymentVerifier() async {
-    // Initialize SharedPreferences for local storage
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Call paymentVerifier to check and handle payment due dates
-    paymentVerifier(prefs, context);
+  Future<void> _paymentVerifier(
+      SharedPreferences prefs, ToastService toastService) async {
+    await paymentVerifier(prefs, context, toastService);
   }
 
   // Updates the selected navigation tab index
@@ -143,8 +161,26 @@ class _MainState extends State<Main> {
   }
 }
 
+// Function to update last active time for a user
+Future<void> updateLastActiveTime() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String mobileNumber = (prefs.getString('mobile_number') ?? '');
+
+  if (mobileNumber.isNotEmpty) {
+    final MongoService mongoService = MongoService();
+    try {
+      await mongoService.connect();
+      await mongoService.updateUserLastActiveDate(mobileNumber, DateTime.now());
+      await mongoService.disconnect();
+    } catch (e) {
+      return;
+    }
+  }
+}
+
 // Function to verify and handle payment due dates
-void paymentVerifier(SharedPreferences prefs, BuildContext context) async {
+Future<void> paymentVerifier(SharedPreferences prefs, BuildContext context,
+    ToastService toastService) async {
   DateTime? appStartDate =
       DateTime.tryParse(prefs.getString('app_start_date') ?? '');
   DateTime? paymentDueDate =
@@ -165,23 +201,7 @@ void paymentVerifier(SharedPreferences prefs, BuildContext context) async {
           .push(MaterialPageRoute(builder: (_) => const PaymentPage()));
     } else if (differenceInDays <= 2 && differenceInDays > 0) {
       // Display an alert message if payment due date is within 2 days from today
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Payment Reminder'),
-            content: Text('Your payment is due in $differenceInDays days.'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
+      toastService.infoToast('your payment is due in $differenceInDays days.');
     }
   }
 }
