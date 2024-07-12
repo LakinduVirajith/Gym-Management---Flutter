@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gym_management/main.dart';
+import 'package:gym_management/models/confirmation_message.dart';
 import 'package:gym_management/models/user.dart';
 import 'package:gym_management/services/mongo_service.dart';
 import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/utils/date_utils.dart';
+import 'package:gym_management/widgets/confirmation_dialog.dart';
 import 'package:gym_management/widgets/normal_button.dart';
 import 'package:gym_management/widgets/normal_input.dart';
 import 'package:gym_management/widgets/number_input.dart';
@@ -131,61 +134,88 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
+  // Show a confirmation dialog before exiting the application
+  void _showExitConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ConfirmationDialog(
+          confirmationMessage: ConfirmationMessage(
+            topic: 'Exit Application',
+            message: 'Are you sure you want to exit the application?',
+            option1: 'No',
+            option2: 'Yes',
+          ),
+          onConfirm: () {
+            SystemNavigator.pop();
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Container(
-          alignment: Alignment.center,
-          child: Padding(
-            padding: const EdgeInsets.all(48.0),
-            child: _isLoading
-                ? const CircularProgressIndicator()
-                : Column(
-                    children: [
-                      const Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          fontSize: 36.0,
-                          fontWeight: FontWeight.w700,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return; // Prevent the default back action
+        _showExitConfirmation(
+            context); // Show the exit confirmation dialog when back button is pressed
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(48.0),
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : Column(
+                      children: [
+                        const Text(
+                          'Sign Up',
+                          style: TextStyle(
+                            fontSize: 36.0,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24.0),
-                      // Input field for user name
-                      NormalInput(
-                        placeholderText: 'User Name',
-                        icon: Icons.person,
-                        normalController: _userNameController,
-                      ),
-                      const SizedBox(height: 12.0),
-                      // Input field for user mobile number
-                      NumberInput(
-                        placeholderText: 'Mobile Number',
-                        icon: Icons.person,
-                        normalController: _mobileNumberController,
-                      ),
-                      const SizedBox(height: 12.0),
-                      // Input field for fitness center name
-                      NormalInput(
-                        placeholderText: 'Gym Name',
-                        icon: Icons.person,
-                        normalController: _gymNameController,
-                      ),
-                      const SizedBox(height: 12.0),
-                      // Input field for fitness center address
-                      NormalInput(
-                        placeholderText: 'Gym Address',
-                        icon: Icons.person,
-                        normalController: _gymAddressController,
-                      ),
-                      const SizedBox(height: 36.0),
-                      // Button to clear all form fields
-                      NormalButton(buttonText: 'CLEAN', onPressed: _clean),
-                      const SizedBox(height: 12.0),
-                      // Button to register a gym
-                      NormalButton(buttonText: 'SIGN UP', onPressed: _signUp),
-                    ],
-                  ),
+                        const SizedBox(height: 24.0),
+                        // Input field for user name
+                        NormalInput(
+                          placeholderText: 'User Name',
+                          icon: Icons.person,
+                          normalController: _userNameController,
+                        ),
+                        const SizedBox(height: 12.0),
+                        // Input field for user mobile number
+                        NumberInput(
+                          placeholderText: 'Mobile Number',
+                          icon: Icons.person,
+                          normalController: _mobileNumberController,
+                        ),
+                        const SizedBox(height: 12.0),
+                        // Input field for fitness center name
+                        NormalInput(
+                          placeholderText: 'Gym Name',
+                          icon: Icons.person,
+                          normalController: _gymNameController,
+                        ),
+                        const SizedBox(height: 12.0),
+                        // Input field for fitness center address
+                        NormalInput(
+                          placeholderText: 'Gym Address',
+                          icon: Icons.person,
+                          normalController: _gymAddressController,
+                        ),
+                        const SizedBox(height: 36.0),
+                        // Button to clear all form fields
+                        NormalButton(buttonText: 'CLEAN', onPressed: _clean),
+                        const SizedBox(height: 12.0),
+                        // Button to register a gym
+                        NormalButton(buttonText: 'SIGN UP', onPressed: _signUp),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),

@@ -77,45 +77,47 @@ class _InsertPageState extends State<InsertPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(48.0),
-          child: Column(
-            children: [
-              const Text(
-                'New Member',
-                style: TextStyle(
-                  fontSize: 36.0,
-                  fontWeight: FontWeight.w700,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(48.0),
+            child: Column(
+              children: [
+                const Text(
+                  'New Member',
+                  style: TextStyle(
+                    fontSize: 36.0,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24.0),
-              // Input field for member's name
-              NormalInput(
-                placeholderText: 'Name',
-                icon: Icons.person,
-                normalController: _userNameController,
-              ),
-              const SizedBox(height: 12.0),
-              // Input field for member's age
-              NumberInput(
-                placeholderText: 'Age',
-                icon: Icons.cake_rounded,
-                normalController: _ageController,
-              ),
-              const SizedBox(height: 12.0),
-              // Input field for member's start date
-              DateInput(
-                placeholderText: 'Start Date',
-                icon: Icons.calendar_view_day_rounded,
-                dateController: _startDateController,
-              ),
-              const SizedBox(height: 36.0),
-              // Button to clear all form fields
-              NormalButton(buttonText: 'CLEAN', onPressed: _clean),
-              const SizedBox(height: 12.0),
-              // Button to create a new member
-              NormalButton(buttonText: 'INSERT', onPressed: _create),
-            ],
+                const SizedBox(height: 24.0),
+                // Input field for member's name
+                NormalInput(
+                  placeholderText: 'Name',
+                  icon: Icons.person,
+                  normalController: _userNameController,
+                ),
+                const SizedBox(height: 12.0),
+                // Input field for member's age
+                NumberInput(
+                  placeholderText: 'Age',
+                  icon: Icons.cake_rounded,
+                  normalController: _ageController,
+                ),
+                const SizedBox(height: 12.0),
+                // Input field for member's start date
+                DateInput(
+                  placeholderText: 'Start Date',
+                  icon: Icons.calendar_view_day_rounded,
+                  dateController: _startDateController,
+                ),
+                const SizedBox(height: 36.0),
+                // Button to clear all form fields
+                NormalButton(buttonText: 'CLEAN', onPressed: _clean),
+                const SizedBox(height: 12.0),
+                // Button to create a new member
+                NormalButton(buttonText: 'INSERT', onPressed: _create),
+              ],
+            ),
           ),
         ),
       ),

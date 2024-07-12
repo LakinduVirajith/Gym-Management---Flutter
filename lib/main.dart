@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:gym_management/models/member.dart';
+import 'package:gym_management/pages/contact_us.dart';
 import 'package:gym_management/pages/home.dart';
 import 'package:gym_management/pages/insert.dart';
 import 'package:gym_management/pages/list.dart';
@@ -106,9 +107,31 @@ class MainState extends State<Main> {
     const InsertPage(),
   ];
 
+  // Method to navigate to the contact us page of the application
+  void _contactUs() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ContactUsPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: _selectedIndex == 0
+          ? AppBar(
+              backgroundColor: Colors.black,
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.contact_support_sharp,
+                    color: Colors.white,
+                  ),
+                  onPressed: _contactUs,
+                ),
+              ],
+            )
+          : null,
       body: _pages[_selectedIndex],
       bottomNavigationBar: Container(
         color: Colors.black,
