@@ -54,4 +54,13 @@ class MongoService {
       modify.set('last_active_date', lastActiveDate.toIso8601String()),
     );
   }
+
+  // Method to insert a feedback into the 'feedbacks' collection
+  Future<void> insertFeedback(Map<String, dynamic> feedback) async {
+    if (_database == null) {
+      throw Exception("Database connection is not established.");
+    }
+    final DbCollection usersCollection = _database!.collection('feedbacks');
+    await usersCollection.insertOne(feedback);
+  }
 }
