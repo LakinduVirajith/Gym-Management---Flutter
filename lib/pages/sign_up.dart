@@ -21,10 +21,10 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   // TextEditingControllers for form fields
-  final TextEditingController _userNameController = TextEditingController();
-  final TextEditingController _mobileNumberController = TextEditingController();
-  final TextEditingController _gymNameController = TextEditingController();
-  final TextEditingController _gymAddressController = TextEditingController();
+  late final TextEditingController _userNameController;
+  late final TextEditingController _mobileNumberController;
+  late final TextEditingController _gymNameController;
+  late final TextEditingController _gymAddressController;
 
   // Services for database operations and displaying toast messages
   final MongoService _mongoService = MongoService();
@@ -38,6 +38,10 @@ class _SignUpPageState extends State<SignUpPage> {
     super.initState();
     // Connect to the MongoDB database on initialization
     _mongoService.connect();
+    _userNameController = TextEditingController();
+    _mobileNumberController = TextEditingController();
+    _gymNameController = TextEditingController();
+    _gymAddressController = TextEditingController();
   }
 
   @override

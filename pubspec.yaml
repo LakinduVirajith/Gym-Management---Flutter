@@ -40,6 +40,9 @@ dependencies:
   # Flutter launcher icons
   flutter_launcher_icons: ^0.13.1
 
+  # Stripe payment integration
+  flutter_stripe: ^10.2.0
+
   # Hive local storage package
   hive: ^2.2.3
 

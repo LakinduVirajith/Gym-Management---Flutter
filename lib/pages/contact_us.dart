@@ -15,7 +15,7 @@ class ContactUsPage extends StatefulWidget {
 
 class _ContactUsPageState extends State<ContactUsPage> {
   // TextEditingControllers for form fields
-  final TextEditingController _messageController = TextEditingController();
+  late final TextEditingController _messageController;
 
   // Services for database operations and displaying toast messages
   final MongoService _mongoService = MongoService();
@@ -26,6 +26,7 @@ class _ContactUsPageState extends State<ContactUsPage> {
     super.initState();
     // Connect to the MongoDB database on initialization
     _mongoService.connect();
+    _messageController = TextEditingController();
   }
 
   @override

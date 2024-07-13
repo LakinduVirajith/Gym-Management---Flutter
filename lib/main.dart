@@ -117,69 +117,79 @@ class MainState extends State<Main> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _selectedIndex == 0
-          ? AppBar(
-              backgroundColor: Colors.black,
-              actions: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.contact_support_sharp,
-                    color: Colors.white,
-                  ),
-                  onPressed: _contactUs,
+    return FutureBuilder(
+      future: _initializePaymentVerifier(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else {
+          return Scaffold(
+            appBar: _selectedIndex == 0
+                ? AppBar(
+                    backgroundColor: Colors.black,
+                    actions: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.contact_support_sharp,
+                          color: Colors.white,
+                        ),
+                        onPressed: _contactUs,
+                      ),
+                    ],
+                  )
+                : null,
+            body: _pages[_selectedIndex],
+            bottomNavigationBar: Container(
+              color: Colors.black,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 15.0,
+                  vertical: 20.0,
                 ),
-              ],
-            )
-          : null,
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: Container(
-        color: Colors.black,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 15.0,
-            vertical: 20.0,
-          ),
-          child: GNav(
-            backgroundColor: Colors.black,
-            color: Colors.white,
-            activeColor: Colors.white,
-            tabBackgroundColor: Colors.white10,
-            padding: const EdgeInsets.all(16.0),
-            gap: 8,
-            selectedIndex: _selectedIndex,
-            onTabChange: navigate,
-            tabs: const [
-              GButton(
-                icon: Icons.home_rounded,
-                text: 'Home',
+                child: GNav(
+                  backgroundColor: Colors.black,
+                  color: Colors.white,
+                  activeColor: Colors.white,
+                  tabBackgroundColor: Colors.white10,
+                  padding: const EdgeInsets.all(16.0),
+                  gap: 8,
+                  selectedIndex: _selectedIndex,
+                  onTabChange: navigate,
+                  tabs: const [
+                    GButton(
+                      icon: Icons.home_rounded,
+                      text: 'Home',
+                    ),
+                    GButton(
+                      icon: Icons.people_alt_rounded,
+                      text: 'List',
+                    ),
+                  ],
+                ),
               ),
-              GButton(
-                icon: Icons.people_alt_rounded,
-                text: 'List',
+            ),
+            floatingActionButton: FloatingActionButton(
+              backgroundColor: Colors.black,
+              onPressed: () {
+                navigate(2);
+              },
+              tooltip: 'Insert',
+              shape: const CircleBorder(
+                side: BorderSide(
+                  color: Colors.white,
+                  width: 4.0,
+                ),
               ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black,
-        onPressed: () {
-          navigate(2);
-        },
-        tooltip: 'Insert',
-        shape: const CircleBorder(
-          side: BorderSide(
-            color: Colors.white,
-            width: 4.0,
-          ),
-        ),
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
+            ),
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerDocked,
+          );
+        }
+      },
     );
   }
 }
