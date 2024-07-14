@@ -48,7 +48,7 @@ dart run flutter_native_splash:create --flutter_native_splash.yaml
   - **Explanation:** Uses configuration details from `flutter_native_splash.yaml` to create native splash screens (launch screens) for Android and iOS.
 
 ```
-flutter build apk --split-per-abi
+flutter build apk --build-name=1.0.0 --build-number=1 --split-per-abi
 ```
   - **Purpose:** Builds a release APK for your Flutter app targeting Android, splitting the APK by CPU architecture (ABI).
   - **Explanation:** Prepares your app for deployment by optimizing APK size and performance across different Android device architectures (`armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`).
