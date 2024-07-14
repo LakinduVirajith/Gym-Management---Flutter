@@ -40,6 +40,12 @@ dependencies:
   # Flutter launcher icons
   flutter_launcher_icons: ^0.13.1
 
+  # Native splash screen handling
+  flutter_native_splash: ^2.4.1
+
+  # Customizable loading indicators
+  flutter_spinkit: ^5.2.1
+
   # Stripe payment integration
   flutter_stripe: ^10.2.0
 
@@ -104,7 +110,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/application_logo.png
-    - assets/company_logo.jpg
+    - assets/company_logo.png
+    - assets/splash.png
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

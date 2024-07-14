@@ -128,7 +128,7 @@ class _ContactUsPageState extends State<ContactUsPage> {
                     child: SizedBox(
                       width: 100,
                       height: 100,
-                      child: Image.asset('assets/company_logo.jpg'),
+                      child: Image.asset('assets/company_logo.png'),
                     ),
                   ),
                 ),

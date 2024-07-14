@@ -5,6 +5,7 @@ import 'package:gym_management/models/payment_details.dart';
 import 'package:gym_management/services/mongo_service.dart';
 import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/widgets/confirmation_dialog.dart';
+import 'package:gym_management/widgets/normal_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PaymentPage extends StatefulWidget {
@@ -15,6 +16,7 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
+  late final Future<void> _initializationFuture;
   late final PaymentDetails paymentDetails;
   late final String paymentDueDate;
 
@@ -25,7 +27,7 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   void initState() {
     super.initState();
-    _initializePaymentDetails();
+    _initializationFuture = _initializePaymentDetails();
   }
 
   @override
@@ -56,6 +58,8 @@ class _PaymentPageState extends State<PaymentPage> {
       _toastService.errorToast("Failed to load payment details.");
     }
   }
+
+  Future<void> _makePayment() async {}
 
   // Show a confirmation dialog before exiting the application
   void _showExitConfirmation(BuildContext context) {
@@ -89,42 +93,92 @@ class _PaymentPageState extends State<PaymentPage> {
       child: Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.black,
-            title: const Text('Payment Page'),
+            automaticallyImplyLeading: false,
+            title: const Text(
+              'Payment Page',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           body: FutureBuilder(
-            future: _initializePaymentDetails(),
+            future: _initializationFuture,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return const Center(
-                    child: Text('Error loading payment details'));
-              } else {
-                return Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Payment Amount: LKR ${paymentDetails.amount.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                            fontSize: 20.0, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16.0),
-                      Text(
-                        'Payment Due Date: $paymentDueDate',
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Implement payment logic here
-                        },
-                        child: const Text('Make Payment'),
-                      ),
-                    ],
-                  ),
-                );
+              switch (snapshot.connectionState) {
+                case ConnectionState.done:
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            border: Border.all(width: 2.0),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(8.0),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Payment Due Date:',
+                                style: TextStyle(
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                paymentDueDate.substring(0, 10),
+                                style: const TextStyle(
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16.0),
+                        Container(
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            border: Border.all(width: 2.0),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(8.0),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Payment Amount:',
+                                style: TextStyle(
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'LKR ${paymentDetails.amount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24.0),
+                        NormalButton(
+                          buttonText: 'Make Payment',
+                          onPressed: _makePayment,
+                        ),
+                      ],
+                    ),
+                  );
+                default:
+                  return const Center(child: CircularProgressIndicator());
               }
             },
           )),
