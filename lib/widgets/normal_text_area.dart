@@ -13,7 +13,7 @@ class NormalTextArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      padding: const EdgeInsets.only(right: 12.0, bottom: 6.0, left: 12.0),
       decoration: BoxDecoration(
         border: Border.all(
           width: 2.0,

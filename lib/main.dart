@@ -35,7 +35,7 @@ void main() async {
       child: MaterialApp(
         title: 'Gym Management Application',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
           useMaterial3: true,
         ),
         debugShowCheckedModeBanner: false,
@@ -116,12 +116,15 @@ class MainState extends State<Main> {
                 backgroundColor: Colors.black,
                 automaticallyImplyLeading: false,
                 actions: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.contact_support_sharp,
-                      color: Colors.white,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.question_answer,
+                        color: Colors.white,
+                      ),
+                      onPressed: _contactUs,
                     ),
-                    onPressed: _contactUs,
                   ),
                 ],
               )
