@@ -19,13 +19,29 @@ class InsertPage extends StatefulWidget {
 
 class _InsertPageState extends State<InsertPage> {
   // TextEditingControllers for form fields
-  final TextEditingController _userNameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _startDateController = TextEditingController();
+  late final TextEditingController _userNameController;
+  late final TextEditingController _ageController;
+  late final TextEditingController _startDateController;
 
   // Services for database operations and displaying toast messages
   final HiveService _hiveService = HiveService();
   final ToastService _toastService = ToastService();
+
+  @override
+  void initState() {
+    super.initState();
+    _userNameController = TextEditingController();
+    _ageController = TextEditingController();
+    _startDateController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _userNameController.dispose();
+    _ageController.dispose();
+    _startDateController.dispose();
+    super.dispose();
+  }
 
   // Method to clear all form fields
   void _clean() {

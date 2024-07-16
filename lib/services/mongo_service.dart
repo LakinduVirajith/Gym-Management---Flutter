@@ -60,7 +60,17 @@ class MongoService {
     if (_database == null) {
       throw Exception("Database connection is not established.");
     }
-    final DbCollection usersCollection = _database!.collection('feedbacks');
-    await usersCollection.insertOne(feedback);
+    final DbCollection feedbacksCollection = _database!.collection('feedbacks');
+    await feedbacksCollection.insertOne(feedback);
+  }
+
+  // Method to get payment details from the 'payments' collection
+  Future<Map<String, dynamic>?> getPaymentDetails() async {
+    if (_database == null) {
+      throw Exception("Database connection is not established.");
+    }
+    final DbCollection paymentsCollection = _database!.collection('payments');
+    final paymentDetails = await paymentsCollection.findOne();
+    return paymentDetails;
   }
 }
