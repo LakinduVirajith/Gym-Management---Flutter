@@ -1,10 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:gym_management/models/confirmation_message.dart';
 import 'package:gym_management/models/member.dart';
-import 'package:gym_management/services/hive_service.dart';
+import 'package:gym_management/services/auth_service.dart';
 import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/utils/date_utils.dart';
 import 'package:gym_management/widgets/confirmation_dialog.dart';
+import 'package:gym_management/models/confirmation_message.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,60 +16,92 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final HiveService _hiveService = HiveService();
-  final ToastService _toastService = ToastService();
+  final _authService = AuthService();
+  final _toastService = ToastService();
+
   List<Member> _allMembers = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Fetch members when the widget is first created
-    _getMembers();
+    _fetchMembers();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  // Fetch members from the Hive database and sort them by payment date
-  Future<void> _getMembers() async {
-    List<Member> members = _hiveService.getMembers();
-
-    members.sort((a, b) {
-      DateTime aPaymentDate = DateTime.parse(a.nextPayment);
-      DateTime bPaymentDate = DateTime.parse(b.nextPayment);
-      return aPaymentDate.compareTo(bPaymentDate);
-    });
-
-    setState(() {
-      _allMembers = members;
-      _isLoading = false;
-    });
-  }
-
-  // Update the member's payment date and notify the user
-  void _updateMember(Member member) async {
-    DateTime paymentDate =
-        AppDateUtils.addOneMonth(DateTime.parse(member.nextPayment));
-    String formattedPaymentDate = DateFormat('yyyy-MM-dd').format(paymentDate);
-    member.nextPayment = formattedPaymentDate;
+  Future<void> _fetchMembers() async {
+    setState(() => _isLoading = true);
 
     try {
-      await _hiveService.updateMember(member.key, member);
-      _toastService.successToast('Member updated successfully');
-      _getMembers();
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        _toastService
+            .warningToast("⚠️ Your session has expired. Please log in again.");
+
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        return;
+      }
+
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('members')
+          .get();
+
+      final members = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+
+        return Member(
+          id: doc.id,
+          name: data['name'] ?? '',
+          startDate: data['startDate'] ?? '',
+          nextPayment: data['nextPayment'] ?? '',
+        );
+      }).toList();
+
+      members.sort((a, b) {
+        DateTime aPaymentDate = DateTime.parse(a.nextPayment);
+        DateTime bPaymentDate = DateTime.parse(b.nextPayment);
+        return aPaymentDate.compareTo(bPaymentDate);
+      });
+
+      setState(() {
+        _allMembers = members;
+      });
     } catch (e) {
-      _toastService.errorToast('Failed to updated member');
+      _toastService.errorToast("❌ Failed to load members. Please try again.");
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  // Show a confirmation dialog before updating the member's payment date
+  Future<void> _updateMemberPaymentDate(Member member) async {
+    final currentUser = _authService.currentUser;
+
+    DateTime newPaymentDate =
+        AppDateUtils.addOneMonth(DateTime.parse(member.nextPayment));
+    String formattedDate = DateFormat('yyyy-MM-dd').format(newPaymentDate);
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser?.uid)
+          .collection('members')
+          .doc(member.id)
+          .update({'nextPayment': formattedDate});
+
+      _toastService.successToast('🎉 Member payment updated successfully');
+    } catch (e) {
+      _toastService.errorToast('❗Failed to update member payment');
+    } finally {
+      // REFRESH LIST AFTER UPDATE
+      await _fetchMembers();
+    }
+  }
+
   void _showConfirmationDialog(BuildContext context, Member member) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         return ConfirmationDialog(
           confirmationMessage: ConfirmationMessage(
             topic: 'Payment Confirmation',
@@ -77,7 +110,10 @@ class _HomePageState extends State<HomePage> {
             option1: 'No',
             option2: 'Yes',
           ),
-          onConfirm: () => _updateMember(member),
+          onConfirm: () {
+            Navigator.pop(context);
+            _updateMemberPaymentDate(member);
+          },
         );
       },
     );
@@ -86,94 +122,75 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      // Show a loading indicator while waiting for the data
       return const Center(child: CircularProgressIndicator());
-    } else if (_allMembers.isEmpty) {
-      // Show a message if there are no members to display
-      return const Center(child: Text('No members to show.'));
-    } else {
-      DateTime now = DateTime.now();
-
-      // Separate members into two lists based on payment status
-      List<Member> duePayments = _allMembers.where((member) {
-        DateTime paymentDate = DateTime.parse(member.nextPayment);
-        return paymentDate.isBefore(now);
-      }).toList();
-
-      List<Member> upToDatePayments = _allMembers.where((member) {
-        DateTime paymentDate = DateTime.parse(member.nextPayment);
-        return !paymentDate.isBefore(now);
-      }).toList();
-
-      return Scaffold(
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Display due payments section
-              Container(
-                margin: const EdgeInsets.only(top: 8.0),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-                child: const Text(
-                  'Due Payments',
-                  style: TextStyle(
-                    fontSize: 24.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: duePayments.length,
-                  itemBuilder: (context, index) {
-                    Member member = duePayments[index];
-                    return _buildMemberItem(context, member);
-                  },
-                ),
-              ),
-              // Display up-to-date payments section
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-                child: const Text(
-                  'Up-to-Date Payments',
-                  style: TextStyle(
-                    fontSize: 24.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: upToDatePayments.length,
-                  itemBuilder: (context, index) {
-                    Member member = upToDatePayments[index];
-                    return _buildMemberItem(context, member);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
     }
+
+    if (_allMembers.isEmpty) {
+      return const Center(child: Text('No members to show.'));
+    }
+
+    DateTime now = DateTime.now();
+
+    List<Member> duePayments = _allMembers
+        .where((m) => DateTime.parse(m.nextPayment).isBefore(now))
+        .toList();
+    List<Member> upToDatePayments = _allMembers
+        .where((m) => !DateTime.parse(m.nextPayment).isBefore(now))
+        .toList();
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+              child: const Text(
+                'Due Payments',
+                style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: duePayments.length,
+                itemBuilder: (context, index) =>
+                    _buildMemberItem(context, duePayments[index]),
+              ),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+              child: const Text(
+                'Up-to-Date Payments',
+                style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: upToDatePayments.length,
+                itemBuilder: (context, index) =>
+                    _buildMemberItem(context, upToDatePayments[index]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  // Widget to build each member item
   Widget _buildMemberItem(BuildContext context, Member member) {
     DateTime paymentDate = DateTime.parse(member.nextPayment);
     bool isDue = paymentDate.isBefore(DateTime.now());
     Color borderColor = isDue
-        ? const Color.fromARGB(
-            255, 255, 120, 110) // Red border for due payments
-        : const Color.fromARGB(
-            255, 100, 255, 115); // Green border for up-to-date payments
+        ? const Color.fromARGB(255, 255, 120, 110)
+        : const Color.fromARGB(255, 100, 255, 115);
 
     return Container(
       margin: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 225, 225, 225),
+        color: Colors.white,
         border: Border.all(color: borderColor, width: 2.0),
         borderRadius: BorderRadius.circular(8.0),
       ),
@@ -181,30 +198,77 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ID:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Name:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Start:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Payment:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Name: ${member.name}'),
-                  Text('Age: ${member.age}'),
-                  Text('Start Date: ${member.startDate}'),
-                  Text('Payment Date: ${member.nextPayment}'),
+                  Text(
+                    member.id,
+                    style: const TextStyle(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  Text(
+                    member.name,
+                    style: const TextStyle(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  Text(
+                    member.startDate,
+                    style: const TextStyle(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  Text(
+                    member.nextPayment,
+                    style: const TextStyle(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ],
               ),
             ),
             Container(
               decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(8.0),
-                ),
+                borderRadius: BorderRadius.all(Radius.circular(8.0)),
                 color: Colors.black,
               ),
               child: IconButton(
                 icon: const Icon(Icons.done),
                 color: Colors.white,
-                onPressed: () {
-                  _showConfirmationDialog(context, member);
-                },
+                onPressed: () => _showConfirmationDialog(context, member),
               ),
             ),
           ],

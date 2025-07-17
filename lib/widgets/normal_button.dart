@@ -5,10 +5,12 @@ class NormalButton extends StatelessWidget {
     super.key,
     required this.buttonText,
     required this.onPressed,
+    this.isLoading = false,
   });
 
   final String buttonText;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gym_management/models/confirmation_message.dart';
 import 'package:gym_management/models/member.dart';
-import 'package:gym_management/services/hive_service.dart';
+import 'package:gym_management/services/auth_service.dart';
 import 'package:gym_management/services/toast_service.dart';
+import 'package:gym_management/utils/date_utils.dart';
 import 'package:gym_management/widgets/confirmation_dialog.dart';
 import 'package:gym_management/widgets/normal_input.dart';
 
@@ -15,17 +17,18 @@ class ListPage extends StatefulWidget {
 
 class _ListPageState extends State<ListPage> {
   final TextEditingController _searchController = TextEditingController();
-  final HiveService _hiveService = HiveService();
-  final ToastService _toastService = ToastService();
+
+  final _authService = AuthService();
+  final _toastService = ToastService();
+
   List<Member> _allMembers = [];
   List<Member> _filteredMembers = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Fetch members when the widget is first created
-    _getMembers();
-    // Add a listener to the search controller
+    _fetchMembers();
     _searchController.addListener(_onSearchTextChanged);
   }
 
@@ -36,46 +39,104 @@ class _ListPageState extends State<ListPage> {
     super.dispose();
   }
 
-  // Fetch members from the Hive database
-  Future<void> _getMembers() async {
-    List<Member> members = _hiveService.getMembers();
-    setState(() {
-      _allMembers = members;
-      _filteredMembers = members;
-    });
+  Future<void> _fetchMembers() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        _toastService
+            .warningToast("⚠️ Your session has expired. Please log in again.");
+
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        return;
+      }
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('members')
+          .get();
+
+      final members = snapshot.docs.map((doc) {
+        final data = doc.data();
+
+        final birthdayStr = data['birthday'];
+        int calculatedAge = 0;
+
+        if (birthdayStr != null) {
+          final birthday = DateTime.tryParse(birthdayStr.toString());
+          if (birthday != null) {
+            calculatedAge = AppDateUtils.calculateAge(birthday);
+          }
+        }
+
+        return Member(
+          id: doc.id,
+          name: data['name'] ?? '',
+          age: calculatedAge,
+          height: data['height']?.toString() ?? '',
+          weight: data['weight']?.toString() ?? '',
+          goal: data['goal']?.toString() ?? '',
+          remarks: data['remarks']?.toString() ?? '',
+          startDate: data['startDate'] ?? '',
+          nextPayment: data['nextPayment'] ?? '',
+        );
+      }).toList();
+
+      setState(() {
+        _allMembers = members;
+        _filteredMembers = members;
+      });
+    } catch (e) {
+      _toastService.errorToast("❌ Failed to load members. Please try again.");
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  // Handle search text change to filter the member list
   void _onSearchTextChanged() {
-    String searchText = _searchController.text.toLowerCase();
+    final searchText = _searchController.text.toLowerCase();
     setState(() {
       if (searchText.isEmpty) {
         _filteredMembers = _allMembers;
       } else {
-        _filteredMembers = _allMembers
-            .where((member) => member.name.toLowerCase().contains(searchText))
-            .toList();
+        _filteredMembers = _allMembers.where((member) {
+          final idMatch = member.id.toLowerCase().contains(searchText);
+          final nameMatch = member.name.toLowerCase().contains(searchText);
+          final goalMatch = member.goal.toLowerCase().contains(searchText);
+
+          return nameMatch || idMatch || goalMatch;
+        }).toList();
       }
     });
   }
 
-  // Delete a member from the Hive database and refresh the member list
-  void _deleteMember(int index) async {
+  Future<void> _deleteMember(String memberId) async {
+    final currentUser = _authService.currentUser;
+
     try {
-      await _hiveService.deleteMember(index);
-      _toastService.successToast('Member deleted successfully');
-      _getMembers();
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser?.uid)
+          .collection('members')
+          .doc(memberId)
+          .delete();
+
+      _toastService.successToast('✅ Member deleted successfully.');
     } catch (e) {
-      _toastService.errorToast('Failed to delete member');
+      _toastService.errorToast('❌ Failed to delete member. Please try again.');
+    } finally {
+      // REFRESH LIST AFTER DELETION
+      await _fetchMembers();
     }
   }
 
-  // Show a confirmation dialog before deleting a member
   void _showDeleteConfirmationDialog(
-      BuildContext context, String name, int index) {
+      BuildContext context, String name, String memberId) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         return ConfirmationDialog(
           confirmationMessage: ConfirmationMessage(
             topic: 'Delete Member',
@@ -83,7 +144,10 @@ class _ListPageState extends State<ListPage> {
             option1: 'Cancel',
             option2: 'Delete',
           ),
-          onConfirm: () => _deleteMember(index),
+          onConfirm: () {
+            Navigator.pop(context);
+            _deleteMember(memberId);
+          },
         );
       },
     );
@@ -97,7 +161,12 @@ class _ListPageState extends State<ListPage> {
           children: [
             if (_allMembers.isNotEmpty)
               Container(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.only(
+                  top: 8.0,
+                  bottom: 20.0,
+                  left: 12.0,
+                  right: 12.0,
+                ),
                 color: Colors.black,
                 child: Container(
                   decoration: const BoxDecoration(
@@ -114,61 +183,192 @@ class _ListPageState extends State<ListPage> {
                 ),
               ),
             Expanded(
-              child: _filteredMembers.isEmpty
-                  ? const Center(child: Text('No members to show.'))
-                  : ListView.builder(
-                      itemCount: _filteredMembers.length,
-                      itemBuilder: (context, index) {
-                        // Reverse the index to display the most recently added members first
-                        int reversedIndex = _filteredMembers.length - 1 - index;
-                        Member member = _filteredMembers[reversedIndex];
-                        return Container(
-                          margin: const EdgeInsets.all(12.0),
-                          decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 225, 225, 225),
-                            border:
-                                Border.all(color: Colors.black54, width: 2.0),
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Name: ${member.name}'),
-                                      Text('Age: ${member.age}'),
-                                      Text('Start Date: ${member.startDate}'),
-                                      Text(
-                                          'Next Payment: ${member.nextPayment}'),
-                                    ],
-                                  ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredMembers.isEmpty
+                      ? const Center(child: Text('No members to show.'))
+                      : ListView.builder(
+                          itemCount: _filteredMembers.length,
+                          itemBuilder: (context, index) {
+                            // REVERSE THE LIST TO SHOW NEWEST FIRST
+                            final reversedIndex =
+                                _filteredMembers.length - 1 - index;
+                            final member = _filteredMembers[reversedIndex];
+
+                            return Container(
+                              margin: const EdgeInsets.all(12.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                  color:
+                                      const Color.fromARGB(255, 110, 132, 255),
+                                  width: 2.0,
                                 ),
-                                Container(
-                                  decoration: const BoxDecoration(
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(8.0),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'ID:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const Text(
+                                            'Name:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const Text(
+                                            'Age:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          if (member.height.isNotEmpty)
+                                            const Text(
+                                              'Height:',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          if (member.weight.isNotEmpty)
+                                            const Text(
+                                              'Weight:',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          if (member.height.isNotEmpty)
+                                            const Text(
+                                              'Goal:',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          if (member.weight.isNotEmpty)
+                                            const Text(
+                                              'Remarks:',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          const Text(
+                                            'Start Date:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const Text(
+                                            'Next Payment:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    color: Colors.black,
-                                  ),
-                                  child: IconButton(
-                                    icon: const Icon(Icons.delete),
-                                    color: Colors.white,
-                                    onPressed: () {
-                                      _showDeleteConfirmationDialog(
-                                          context, member.name, reversedIndex);
-                                    },
-                                  ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            member.id,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
+                                          Text(
+                                            member.name,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${member.age}',
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
+                                          if (member.height.isNotEmpty)
+                                            Text(
+                                              member.height,
+                                              style: const TextStyle(
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
+                                          if (member.weight.isNotEmpty)
+                                            Text(
+                                              member.weight,
+                                              style: const TextStyle(
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
+                                          if (member.height.isNotEmpty)
+                                            Text(
+                                              member.goal,
+                                              style: const TextStyle(
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
+                                          if (member.weight.isNotEmpty)
+                                            Text(
+                                              member.remarks,
+                                              style: const TextStyle(
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
+                                          Text(member.startDate),
+                                          Text(
+                                            member.nextPayment,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      decoration: const BoxDecoration(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(8.0)),
+                                        color: Colors.black,
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(Icons.delete),
+                                        color: Colors.white,
+                                        onPressed: () =>
+                                            _showDeleteConfirmationDialog(
+                                          context,
+                                          member.name,
+                                          member.id,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

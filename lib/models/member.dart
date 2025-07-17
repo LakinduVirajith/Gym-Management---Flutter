@@ -1,24 +1,23 @@
-import 'package:hive/hive.dart';
+class Member {
+  final String id; // FIRESTORE DOCUMENT ID
+  final String name;
+  final int age;
+  final String height;
+  final String weight;
+  final String goal;
+  final String remarks;
+  final String startDate;
+  final String nextPayment;
 
-part 'member.g.dart';
-
-@HiveType(typeId: 0)
-class Member extends HiveObject {
-  @HiveField(0)
-  String name;
-
-  @HiveField(1)
-  int age;
-
-  @HiveField(2)
-  String startDate;
-
-  @HiveField(3)
-  String nextPayment;
-
-  Member(
-      {required this.name,
-      required this.age,
-      required this.startDate,
-      required this.nextPayment});
+  Member({
+    required this.id,
+    required this.name,
+    this.age = 0,
+    this.height = '',
+    this.weight = '',
+    this.goal = '',
+    this.remarks = '',
+    required this.startDate,
+    required this.nextPayment,
+  });
 }
