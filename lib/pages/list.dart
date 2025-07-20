@@ -61,7 +61,7 @@ class _ListPageState extends State<ListPage> {
       final members = snapshot.docs.map((doc) {
         final data = doc.data();
 
-        final birthdayStr = data['birthday'];
+        final birthdayStr = data['dateOfBirth'];
         int calculatedAge = 0;
 
         if (birthdayStr != null) {
@@ -72,15 +72,15 @@ class _ListPageState extends State<ListPage> {
         }
 
         return Member(
-          id: doc.id,
-          name: data['name'] ?? '',
+          fireID: doc.id,
+          fullName: data['fullName'] ?? '',
           age: calculatedAge,
-          height: data['height']?.toString() ?? '',
-          weight: data['weight']?.toString() ?? '',
-          goal: data['goal']?.toString() ?? '',
-          remarks: data['remarks']?.toString() ?? '',
-          startDate: data['startDate'] ?? '',
-          nextPayment: data['nextPayment'] ?? '',
+          height: data['heightInCm']?.toString() ?? '',
+          weight: data['weightInKg']?.toString() ?? '',
+          goal: data['fitnessGoal']?.toString() ?? '',
+          notes: data['notes']?.toString() ?? '',
+          startDate: data['membershipStart'] ?? '',
+          nextPayment: data['nextPaymentDue'] ?? '',
         );
       }).toList();
 
@@ -102,11 +102,12 @@ class _ListPageState extends State<ListPage> {
         _filteredMembers = _allMembers;
       } else {
         _filteredMembers = _allMembers.where((member) {
-          final idMatch = member.id.toLowerCase().contains(searchText);
-          final nameMatch = member.name.toLowerCase().contains(searchText);
+          final idMatch = member.fireID.toLowerCase().contains(searchText);
+          final nameMatch = member.fullName.toLowerCase().contains(searchText);
           final goalMatch = member.goal.toLowerCase().contains(searchText);
+          final notesMatch = member.notes.toLowerCase().contains(searchText);
 
-          return nameMatch || idMatch || goalMatch;
+          return nameMatch || idMatch || goalMatch || notesMatch;
         }).toList();
       }
     });
@@ -128,7 +129,7 @@ class _ListPageState extends State<ListPage> {
       _toastService.errorToast('❌ Failed to delete member. Please try again.');
     } finally {
       // REFRESH LIST AFTER DELETION
-      await _fetchMembers();
+      if (mounted) await _fetchMembers();
     }
   }
 
@@ -139,8 +140,9 @@ class _ListPageState extends State<ListPage> {
       builder: (context) {
         return ConfirmationDialog(
           confirmationMessage: ConfirmationMessage(
-            topic: 'Delete Member',
-            message: 'Are you sure you want to delete $name\'s profile?',
+            topic: 'Remove Member',
+            message:
+                'Are you sure you want to permanently remove "$name" from your member list? This action cannot be undone.',
             option1: 'Cancel',
             option2: 'Delete',
           ),
@@ -186,7 +188,41 @@ class _ListPageState extends State<ListPage> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredMembers.isEmpty
-                      ? const Center(child: Text('No members to show.'))
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.group_outlined,
+                                  size: 48,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'No Members Found',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _allMembers.isEmpty
+                                      ? 'Start building your fitness community by adding members.'
+                                      : 'No matching members found. Try searching by name, goal, notes, or member ID.',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
                       : ListView.builder(
                           itemCount: _filteredMembers.length,
                           itemBuilder: (context, index) {
@@ -217,13 +253,13 @@ class _ListPageState extends State<ListPage> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           const Text(
-                                            'ID:',
+                                            'Member ID:',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                           const Text(
-                                            'Name:',
+                                            'Full Name:',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -236,40 +272,40 @@ class _ListPageState extends State<ListPage> {
                                           ),
                                           if (member.height.isNotEmpty)
                                             const Text(
-                                              'Height:',
+                                              'Height (cm):',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                           if (member.weight.isNotEmpty)
                                             const Text(
-                                              'Weight:',
+                                              'Weight (kg):',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                           if (member.height.isNotEmpty)
                                             const Text(
-                                              'Goal:',
+                                              'Fitness Goal:',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                           if (member.weight.isNotEmpty)
                                             const Text(
-                                              'Remarks:',
+                                              'Additional Notes:',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                           const Text(
-                                            'Start Date:',
+                                            'Membership Start:',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                           const Text(
-                                            'Next Payment:',
+                                            'Next Payment Due:',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -283,14 +319,14 @@ class _ListPageState extends State<ListPage> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            member.id,
+                                            member.fireID,
                                             style: const TextStyle(
                                               decoration:
                                                   TextDecoration.underline,
                                             ),
                                           ),
                                           Text(
-                                            member.name,
+                                            member.fullName,
                                             style: const TextStyle(
                                               decoration:
                                                   TextDecoration.underline,
@@ -329,7 +365,7 @@ class _ListPageState extends State<ListPage> {
                                             ),
                                           if (member.weight.isNotEmpty)
                                             Text(
-                                              member.remarks,
+                                              member.notes,
                                               style: const TextStyle(
                                                 decoration:
                                                     TextDecoration.underline,
@@ -358,8 +394,8 @@ class _ListPageState extends State<ListPage> {
                                         onPressed: () =>
                                             _showDeleteConfirmationDialog(
                                           context,
-                                          member.name,
-                                          member.id,
+                                          member.fullName,
+                                          member.fireID,
                                         ),
                                       ),
                                     ),

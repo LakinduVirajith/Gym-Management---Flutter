@@ -51,10 +51,10 @@ class _HomePageState extends State<HomePage> {
         final data = doc.data();
 
         return Member(
-          id: doc.id,
-          name: data['name'] ?? '',
-          startDate: data['startDate'] ?? '',
-          nextPayment: data['nextPayment'] ?? '',
+          fireID: doc.id,
+          fullName: data['fullName'] ?? '',
+          startDate: data['membershipStart'] ?? '',
+          nextPayment: data['nextPaymentDue'] ?? '',
         );
       }).toList();
 
@@ -86,7 +86,7 @@ class _HomePageState extends State<HomePage> {
           .collection('users')
           .doc(currentUser?.uid)
           .collection('members')
-          .doc(member.id)
+          .doc(member.fireID)
           .update({'nextPayment': formattedDate});
 
       _toastService.successToast('🎉 Member payment updated successfully');
@@ -106,7 +106,7 @@ class _HomePageState extends State<HomePage> {
           confirmationMessage: ConfirmationMessage(
             topic: 'Payment Confirmation',
             message:
-                'Are you sure you want to confirm ${member.name}\'s payment?',
+                'Are you sure you want to confirm ${member.fullName}\'s payment?',
             option1: 'No',
             option2: 'Yes',
           ),
@@ -126,7 +126,39 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (_allMembers.isEmpty) {
-      return const Center(child: Text('No members to show.'));
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 18.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.fitness_center,
+                size: 48,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 12),
+              Text(
+                'No gym members yet!',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+              SizedBox(height: 6),
+              Text(
+                'Add your first gym member to start tracking progress and payments.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     DateTime now = DateTime.now();
@@ -148,7 +180,7 @@ class _HomePageState extends State<HomePage> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
               child: const Text(
-                'Due Payments',
+                '⏰ Due Payments',
                 style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
               ),
             ),
@@ -163,7 +195,7 @@ class _HomePageState extends State<HomePage> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
               child: const Text(
-                'Up-to-Date Payments',
+                '🧾 Up-to-Date Payments',
                 style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
               ),
             ),
@@ -203,25 +235,25 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'ID:',
+                    'Member ID:',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    'Name:',
+                    'Full Name:',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    'Start:',
+                    'Membership Start:',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    'Payment:',
+                    'Next Payment Due:',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                     ),
@@ -234,13 +266,13 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    member.id,
+                    member.fireID,
                     style: const TextStyle(
                       decoration: TextDecoration.underline,
                     ),
                   ),
                   Text(
-                    member.name,
+                    member.fullName,
                     style: const TextStyle(
                       decoration: TextDecoration.underline,
                     ),

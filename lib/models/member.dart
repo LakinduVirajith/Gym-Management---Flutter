@@ -1,22 +1,22 @@
 class Member {
-  final String id; // FIRESTORE DOCUMENT ID
-  final String name;
+  final String fireID;
+  final String fullName;
   final int age;
   final String height;
   final String weight;
   final String goal;
-  final String remarks;
+  final String notes;
   final String startDate;
   final String nextPayment;
 
   Member({
-    required this.id,
-    required this.name,
+    required this.fireID,
+    required this.fullName,
     this.age = 0,
     this.height = '',
     this.weight = '',
     this.goal = '',
-    this.remarks = '',
+    this.notes = '',
     required this.startDate,
     required this.nextPayment,
   });

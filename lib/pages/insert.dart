@@ -18,42 +18,43 @@ class InsertPage extends StatefulWidget {
 }
 
 class _InsertPageState extends State<InsertPage> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _birthDayController = TextEditingController();
-  final TextEditingController _heightController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _goalController = TextEditingController();
-  final TextEditingController _remarksController = TextEditingController();
-  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _dateOfBirthController = TextEditingController();
+  final TextEditingController _heightInCmController = TextEditingController();
+  final TextEditingController _weightInKgController = TextEditingController();
+  final TextEditingController _fitnessGoalController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _membershipStartController =
+      TextEditingController();
 
   final _authService = AuthService();
   final _toastService = ToastService();
 
   void _clean() {
-    _nameController.clear();
-    _birthDayController.clear();
-    _heightController.clear();
-    _weightController.clear();
-    _goalController.clear();
-    _remarksController.clear();
-    _startDateController.clear();
+    _fullNameController.clear();
+    _dateOfBirthController.clear();
+    _heightInCmController.clear();
+    _weightInKgController.clear();
+    _fitnessGoalController.clear();
+    _notesController.clear();
+    _membershipStartController.clear();
   }
 
   Future<void> _insertMember() async {
-    final name = _nameController.text.trim();
-    final birthDay = _birthDayController.text.trim();
-    final height = _heightController.text.trim();
-    final weight = _weightController.text.trim();
-    final goal = _goalController.text.trim();
-    final remarks = _remarksController.text.trim();
-    final startDateText = _startDateController.text.trim();
+    final fullName = _fullNameController.text.trim();
+    final dateOfBirth = _dateOfBirthController.text.trim();
+    final heightInCm = _heightInCmController.text.trim();
+    final weightInKg = _weightInKgController.text.trim();
+    final fitnessGoal = _fitnessGoalController.text.trim();
+    final notes = _notesController.text.trim();
+    final membershipStart = _membershipStartController.text.trim();
 
-    if (name.isEmpty ||
-        birthDay.isEmpty ||
-        height.isEmpty ||
-        weight.isEmpty ||
-        goal.isEmpty ||
-        startDateText.isEmpty) {
+    if (fullName.isEmpty ||
+        dateOfBirth.isEmpty ||
+        heightInCm.isEmpty ||
+        weightInKg.isEmpty ||
+        fitnessGoal.isEmpty ||
+        membershipStart.isEmpty) {
       _toastService.warningToast("⚠️ Please fill in all required fields.");
       return;
     }
@@ -73,40 +74,49 @@ class _InsertPageState extends State<InsertPage> {
           .doc(user.uid)
           .collection('members');
 
-      // GET THE LATEST MEMBER ID AND GENERATE NEW ID
+      // GET THE CURRENT YEAR AND EXTRACT LAST TWO DIGITS
+      final now = DateTime.now();
+      final yearSuffix = now.year.toString().substring(2);
+
+      // GET ALL MEMBERS
       final snapshot = await memberCollection.get();
       String newCustomId;
 
-      if (snapshot.docs.isNotEmpty) {
-        final ids = snapshot.docs.map((doc) => doc.id).toList();
+      final ids = snapshot.docs.map((doc) => doc.id).toList();
 
-        final maxNumber = ids.map((id) {
-          final parts = id.split('_');
-          if (parts.length == 2) {
-            return int.tryParse(parts[1]) ?? 0;
+      // FILTER ONLY CURRENT YEAR IDS
+      final currentYearIds =
+          ids.where((id) => id.contains('-$yearSuffix-')).toList();
+
+      if (currentYearIds.isNotEmpty) {
+        final maxNumber = currentYearIds.map((id) {
+          final parts = id.split('-');
+          if (parts.length >= 3) {
+            return int.tryParse(parts.last) ?? 0;
           }
           return 0;
-        }).reduce((a, b) => a > b ? a : b);
+        }).fold(0, (a, b) => a > b ? a : b);
 
-        final nextId = maxNumber + 1;
-        newCustomId = 'M-${nextId.toString().padLeft(4, '0')}';
+        final nextNumber = maxNumber + 1;
+        newCustomId =
+            'MEM-$yearSuffix-${nextNumber.toString().padLeft(4, '0')}';
       } else {
-        newCustomId = 'M-0001';
+        newCustomId = 'MEM-$yearSuffix-0001';
       }
 
       final dateFormatter = DateFormat('yyyy-MM-dd');
-      final startDate = DateTime.parse(startDateText);
-      final nextPaymentDate = AppDateUtils.addOneMonth(startDate);
+      final startDate = DateTime.parse(membershipStart);
+      final nextPaymentDueDate = AppDateUtils.addOneMonth(startDate);
 
       await memberCollection.doc(newCustomId).set({
-        'name': name,
-        'birthday': dateFormatter.format(DateTime.parse(birthDay)),
-        'height': double.parse(height),
-        'weight': double.parse(weight),
-        'goal': goal,
-        'remarks': remarks,
-        'startDate': dateFormatter.format(startDate),
-        'nextPayment': dateFormatter.format(nextPaymentDate),
+        'fullName': fullName,
+        'dateOfBirth': dateFormatter.format(DateTime.parse(dateOfBirth)),
+        'heightInCm': double.parse(heightInCm),
+        'weightInKg': double.parse(weightInKg),
+        'fitnessGoal': fitnessGoal,
+        'notes': notes,
+        'membershipStart': dateFormatter.format(startDate),
+        'nextPaymentDue': dateFormatter.format(nextPaymentDueDate),
         'createdAt': dateFormatter.format(DateTime.now()),
       });
 
@@ -130,50 +140,68 @@ class _InsertPageState extends State<InsertPage> {
           padding: const EdgeInsets.all(48.0),
           child: Column(
             children: [
-              const Text(
-                'New Member',
-                style: TextStyle(fontSize: 32.0, fontWeight: FontWeight.w700),
+              const Center(
+                child: Text(
+                  '🏋️ Register New Member',
+                  style: TextStyle(
+                    fontSize: 24.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 24.0),
               NormalInput(
-                  placeholderText: 'Name',
-                  icon: Icons.person,
-                  normalController: _nameController),
+                placeholderText: 'Full Name',
+                icon: Icons.person,
+                normalController: _fullNameController,
+              ),
               const SizedBox(height: 12.0),
               DateInput(
-                placeholderText: 'BirthDay',
+                placeholderText: 'Date of Birth',
                 icon: Icons.cake,
-                dateController: _birthDayController,
+                dateController: _dateOfBirthController,
               ),
               const SizedBox(height: 12.0),
               NumberInput(
-                  placeholderText: 'Height (cm)',
-                  icon: Icons.height,
-                  normalController: _heightController),
+                placeholderText: 'Height (cm)',
+                icon: Icons.height,
+                normalController: _heightInCmController,
+              ),
               const SizedBox(height: 12.0),
               NumberInput(
-                  placeholderText: 'Weight (kg)',
-                  icon: Icons.monitor_weight,
-                  normalController: _weightController),
+                placeholderText: 'Weight (kg)',
+                icon: Icons.monitor_weight,
+                normalController: _weightInKgController,
+              ),
               const SizedBox(height: 12.0),
               NormalInput(
-                  placeholderText: 'Goal',
-                  icon: Icons.flag,
-                  normalController: _goalController),
+                placeholderText: 'Fitness Goal',
+                icon: Icons.flag,
+                normalController: _fitnessGoalController,
+              ),
               const SizedBox(height: 12.0),
               NormalInput(
-                  placeholderText: 'Remarks (optional)',
-                  icon: Icons.note,
-                  normalController: _remarksController),
+                placeholderText: 'Notes (optional)',
+                icon: Icons.note,
+                normalController: _notesController,
+              ),
               const SizedBox(height: 12.0),
               DateInput(
-                  placeholderText: 'Start Date',
-                  icon: Icons.calendar_today,
-                  dateController: _startDateController),
+                placeholderText: 'Membership Starts',
+                icon: Icons.calendar_today,
+                dateController: _membershipStartController,
+              ),
               const SizedBox(height: 36.0),
-              NormalButton(buttonText: 'CLEAN', onPressed: _clean),
+              NormalButton(
+                buttonText: 'CLEAN',
+                onPressed: _clean,
+              ),
               const SizedBox(height: 12.0),
-              NormalButton(buttonText: 'INSERT', onPressed: _insertMember),
+              NormalButton(
+                buttonText: 'INSERT',
+                onPressed: _insertMember,
+              ),
             ],
           ),
         ),
