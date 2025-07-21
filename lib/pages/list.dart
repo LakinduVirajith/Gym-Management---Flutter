@@ -129,7 +129,7 @@ class _ListPageState extends State<ListPage> {
       _toastService.errorToast('❌ Failed to delete member. Please try again.');
     } finally {
       // REFRESH LIST AFTER DELETION
-      if (mounted) await _fetchMembers();
+      await _fetchMembers();
     }
   }
 
@@ -146,9 +146,9 @@ class _ListPageState extends State<ListPage> {
             option1: 'Cancel',
             option2: 'Delete',
           ),
-          onConfirm: () {
-            Navigator.pop(context);
-            _deleteMember(memberId);
+          onConfirm: () async {
+            await _deleteMember(memberId);
+            if (mounted) Navigator.pop(context);
           },
         );
       },

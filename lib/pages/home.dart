@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> {
           .doc(currentUser?.uid)
           .collection('members')
           .doc(member.fireID)
-          .update({'nextPayment': formattedDate});
+          .update({'nextPaymentDue': formattedDate});
 
       _toastService.successToast('🎉 Member payment updated successfully');
     } catch (e) {
@@ -110,9 +110,9 @@ class _HomePageState extends State<HomePage> {
             option1: 'No',
             option2: 'Yes',
           ),
-          onConfirm: () {
-            Navigator.pop(context);
-            _updateMemberPaymentDate(member);
+          onConfirm: () async {
+            await _updateMemberPaymentDate(member);
+            if (mounted) Navigator.pop(context);
           },
         );
       },
