@@ -9,6 +9,7 @@ class Member {
   final String startDate;
   final String nextPayment;
   final String subscriptionPlan;
+  final String mobileNumber;
 
   Member({
     required this.fireID,
@@ -21,5 +22,6 @@ class Member {
     required this.startDate,
     required this.nextPayment,
     required this.subscriptionPlan,
+    this.mobileNumber = '',
   });
 }

@@ -7,6 +7,7 @@ import 'package:gym_management/utils/date_utils.dart';
 import 'package:gym_management/utils/dialog_utils.dart';
 import 'package:gym_management/widgets/date_input.dart';
 import 'package:gym_management/widgets/dropdown_input.dart';
+import 'package:gym_management/widgets/intl_phone_field.dart';
 import 'package:gym_management/widgets/normal_button.dart';
 import 'package:gym_management/widgets/normal_input.dart';
 import 'package:gym_management/widgets/number_input.dart';
@@ -28,10 +29,12 @@ class _InsertPageState extends State<InsertPage> {
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _membershipStartController =
       TextEditingController();
+  final TextEditingController _mobileNumberController = TextEditingController();
 
   final _authService = AuthService();
   final _toastService = ToastService();
 
+  String _fullMobileNumber = '';
   List<String> _planOptions = [];
   String? _selectedPlan;
 
@@ -85,6 +88,7 @@ class _InsertPageState extends State<InsertPage> {
     final fitnessGoal = _fitnessGoalController.text.trim();
     final notes = _notesController.text.trim();
     final membershipStart = _membershipStartController.text.trim();
+    final mobileNumber = _fullMobileNumber.trim();
 
     if (fullName.isEmpty ||
         dateOfBirth.isEmpty ||
@@ -92,7 +96,7 @@ class _InsertPageState extends State<InsertPage> {
         weightInKg.isEmpty ||
         fitnessGoal.isEmpty ||
         membershipStart.isEmpty ||
-        _selectedPlan == null ||
+        mobileNumber.isEmpty ||
         _selectedPlan!.isEmpty) {
       _toastService.warningToast("⚠️ Please fill in all required fields.");
       return;
@@ -160,6 +164,7 @@ class _InsertPageState extends State<InsertPage> {
         'nextPaymentDue': dateFormatter.format(nextPaymentDueDate),
         'subscriptionPlan': _selectedPlan,
         'createdAt': dateFormatter.format(DateTime.now()),
+        'mobileNumber': _fullMobileNumber,
       });
 
       _toastService.successToast("✅ Member has been added successfully!");
@@ -178,10 +183,25 @@ class _InsertPageState extends State<InsertPage> {
     _fitnessGoalController.clear();
     _notesController.clear();
     _membershipStartController.clear();
+    _mobileNumberController.clear();
+    _fullMobileNumber = '';
   }
 
   void _navigateToMainPage() {
     Main.of(context)?.navigate(1);
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _dateOfBirthController.dispose();
+    _heightInCmController.dispose();
+    _weightInKgController.dispose();
+    _fitnessGoalController.dispose();
+    _notesController.dispose();
+    _membershipStartController.dispose();
+    _mobileNumberController.dispose();
+    super.dispose();
   }
 
   @override
@@ -254,6 +274,15 @@ class _InsertPageState extends State<InsertPage> {
                     _selectedPlan = value;
                   });
                 },
+              ),
+              const SizedBox(height: 12.0),
+              CustomIntlPhoneField(
+                placeholderText: 'Mobile Number',
+                controller: _mobileNumberController,
+                onChanged: (val) {
+                  _fullMobileNumber = val;
+                },
+                initialCountryCode: 'LK',
               ),
               const SizedBox(height: 36.0),
               NormalButton(

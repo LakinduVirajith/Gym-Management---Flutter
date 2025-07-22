@@ -7,9 +7,9 @@ import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/utils/date_utils.dart';
 import 'package:gym_management/validators/input_validator.dart';
 import 'package:gym_management/utils/dialog_utils.dart';
+import 'package:gym_management/widgets/intl_phone_field.dart';
 import 'package:gym_management/widgets/normal_button.dart';
 import 'package:gym_management/widgets/normal_input.dart';
-import 'package:gym_management/widgets/number_input.dart';
 import 'package:gym_management/widgets/password_input.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +30,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   final _authService = AuthService();
   final _toastService = ToastService();
+  String _fullMobileNumber = '';
   bool _isLoading = false;
 
   @override
@@ -48,11 +49,12 @@ class _SignUpPageState extends State<SignUpPage> {
     _gymNameController.clear();
     _gymAddressController.clear();
     _passwordController.clear();
+    _fullMobileNumber = '';
   }
 
   Future<void> _signUp() async {
     final email = _emailController.text.trim();
-    final mobileNumber = _mobileNumberController.text.trim();
+    final mobileNumber = _fullMobileNumber.trim();
     final gymName = _gymNameController.text.trim();
     final gymAddress = _gymAddressController.text.trim();
     final password = _passwordController.text.trim();
@@ -158,10 +160,13 @@ class _SignUpPageState extends State<SignUpPage> {
                   normalController: _emailController,
                 ),
                 const SizedBox(height: 12.0),
-                NumberInput(
+                CustomIntlPhoneField(
                   placeholderText: 'Mobile Number',
-                  icon: Icons.phone,
-                  normalController: _mobileNumberController,
+                  controller: _mobileNumberController,
+                  onChanged: (val) {
+                    _fullMobileNumber = val;
+                  },
+                  initialCountryCode: 'LK',
                 ),
                 const SizedBox(height: 12.0),
                 NormalInput(

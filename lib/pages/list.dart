@@ -82,6 +82,7 @@ class _ListPageState extends State<ListPage> {
           startDate: data['membershipStart'],
           nextPayment: data['nextPaymentDue'],
           subscriptionPlan: data['subscriptionPlan'],
+          mobileNumber: data['mobileNumber'],
         );
       }).toList();
 
@@ -317,6 +318,12 @@ class _ListPageState extends State<ListPage> {
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
+                                          const Text(
+                                            'Mobile Number:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -391,6 +398,13 @@ class _ListPageState extends State<ListPage> {
                                           ),
                                           Text(
                                             member.subscriptionPlan,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
+                                          Text(
+                                            member.mobileNumber,
                                             style: const TextStyle(
                                               decoration:
                                                   TextDecoration.underline,

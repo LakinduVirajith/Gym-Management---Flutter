@@ -117,6 +117,26 @@ Future<void> showInitialSetupDialog(BuildContext context) async {
   final TextEditingController sixMonthController = TextEditingController();
   final TextEditingController oneYearController = TextEditingController();
 
+  final user = _authService.currentUser;
+  final doc =
+      await FirebaseFirestore.instance.collection('users').doc(user?.uid).get();
+
+  final plans = doc.data()?['paymentPlans'];
+  final currentValues = {
+    '1month': (plans['1month'] is num)
+        ? (plans['1month'] as num).toInt().toString()
+        : null,
+    '3months': (plans['3months'] is num)
+        ? (plans['3months'] as num).toInt().toString()
+        : null,
+    '6months': (plans['6months'] is num)
+        ? (plans['6months'] as num).toInt().toString()
+        : null,
+    '1year': (plans['1year'] is num)
+        ? (plans['1year'] as num).toInt().toString()
+        : null,
+  };
+
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
@@ -143,7 +163,23 @@ Future<void> showInitialSetupDialog(BuildContext context) async {
                 icon: Icons.payment_rounded,
                 normalController: oneMonthController,
               ),
-              const SizedBox(height: 12.0),
+              currentValues['1month'] != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(
+                        left: 4.0,
+                        top: 2.0,
+                        bottom: 8.0,
+                      ),
+                      child: Text(
+                        'Current Plan: ${currentValues['1month']}',
+                        style: const TextStyle(
+                          fontSize: 12.0,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )
+                  : const SizedBox(height: 12.0),
               const Text(
                 'Optional Plans',
                 style: TextStyle(fontSize: 16.0),
@@ -154,18 +190,66 @@ Future<void> showInitialSetupDialog(BuildContext context) async {
                 icon: Icons.payment_rounded,
                 normalController: threeMonthController,
               ),
-              const SizedBox(height: 12.0),
+              currentValues['3months'] != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(
+                        left: 4.0,
+                        top: 2.0,
+                        bottom: 8.0,
+                      ),
+                      child: Text(
+                        'Current Plan: ${currentValues['3months']}',
+                        style: const TextStyle(
+                          fontSize: 12.0,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )
+                  : const SizedBox(height: 12.0),
               NumberInput(
                 placeholderText: "6 Months Plan Amount (Optional)",
                 icon: Icons.payment_rounded,
                 normalController: sixMonthController,
               ),
-              const SizedBox(height: 12.0),
+              currentValues['6months'] != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(
+                        left: 4.0,
+                        top: 2.0,
+                        bottom: 8.0,
+                      ),
+                      child: Text(
+                        'Current Plan: ${currentValues['6months']}',
+                        style: const TextStyle(
+                          fontSize: 12.0,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )
+                  : const SizedBox(height: 12.0),
               NumberInput(
                 placeholderText: "1 Year Plan Amount (Optional)",
                 icon: Icons.payment_rounded,
                 normalController: oneYearController,
               ),
+              if (currentValues['1year'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 4.0,
+                    top: 2.0,
+                    bottom: 8.0,
+                  ),
+                  child: Text(
+                    'Current Plan: ${currentValues['1year']}',
+                    style: const TextStyle(
+                      fontSize: 12.0,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

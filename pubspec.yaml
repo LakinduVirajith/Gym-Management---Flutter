@@ -25,6 +25,7 @@ dependencies:
   toastification: ^2.0.0
   url_launcher: ^6.3.0
   google_nav_bar: ^5.0.6
+  intl_phone_field: ^3.2.0
 
 dev_dependencies:
   flutter_test:

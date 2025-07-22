@@ -36,9 +36,9 @@ class AppDateUtils {
     switch (plan.toLowerCase()) {
       case '1month' || '1 Month Plan':
         return 1;
-      case '3months' || '3 Month Plan':
+      case '3months' || '3 Months Plan':
         return 3;
-      case '6months' || '6 Month Plan':
+      case '6months' || '6 Months Plan':
         return 6;
       case '1year' || '1 Year Plan':
         return 12;
@@ -53,14 +53,17 @@ class AppDateUtils {
     final match = regex.firstMatch(rawKey);
 
     if (match != null) {
-      final number = match.group(1);
+      final number = int.tryParse(match.group(1) ?? '1') ?? 1;
       final unit = match.group(2)?.toLowerCase();
 
-      String formattedUnit = unit == 'month' || unit == 'months'
-          ? 'Month'
-          : unit == 'year' || unit == 'years'
-              ? 'Year'
-              : unit ?? '';
+      String formattedUnit;
+      if (unit == 'month' || unit == 'months') {
+        formattedUnit = number == 1 ? 'Month' : 'Months';
+      } else if (unit == 'year' || unit == 'years') {
+        formattedUnit = number == 1 ? 'Year' : 'Years';
+      } else {
+        formattedUnit = unit ?? '';
+      }
 
       return '$number $formattedUnit Plan';
     }
