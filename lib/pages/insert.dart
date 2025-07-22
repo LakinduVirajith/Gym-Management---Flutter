@@ -4,7 +4,9 @@ import 'package:gym_management/main.dart';
 import 'package:gym_management/services/auth_service.dart';
 import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/utils/date_utils.dart';
+import 'package:gym_management/utils/dialog_utils.dart';
 import 'package:gym_management/widgets/date_input.dart';
+import 'package:gym_management/widgets/dropdown_input.dart';
 import 'package:gym_management/widgets/normal_button.dart';
 import 'package:gym_management/widgets/normal_input.dart';
 import 'package:gym_management/widgets/number_input.dart';
@@ -30,14 +32,49 @@ class _InsertPageState extends State<InsertPage> {
   final _authService = AuthService();
   final _toastService = ToastService();
 
-  void _clean() {
-    _fullNameController.clear();
-    _dateOfBirthController.clear();
-    _heightInCmController.clear();
-    _weightInKgController.clear();
-    _fitnessGoalController.clear();
-    _notesController.clear();
-    _membershipStartController.clear();
+  List<String> _planOptions = [];
+  String? _selectedPlan;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserPaymentPlans();
+  }
+
+  Future<void> _fetchUserPaymentPlans() async {
+    final user = _authService.currentUser;
+    if (user == null) {
+      _toastService
+          .warningToast("⚠️ Your session has expired. Please log in again.");
+
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      return;
+    }
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final plans = doc.data()?['paymentPlans'];
+
+    if (plans == null || (plans as Map).isEmpty) {
+      _toastService
+          .warningToast("⚠️ No payment plans found! Please set them up.");
+      await showInitialSetupDialog(context);
+      await _fetchUserPaymentPlans();
+    } else {
+      setState(() {
+        _planOptions = plans.keys
+            .map((key) => AppDateUtils.formatPlanLabel(key))
+            .toList()
+            .reversed
+            .toList();
+        if (_planOptions.isNotEmpty) {
+          _selectedPlan = _planOptions.first;
+        }
+      });
+    }
   }
 
   Future<void> _insertMember() async {
@@ -54,7 +91,9 @@ class _InsertPageState extends State<InsertPage> {
         heightInCm.isEmpty ||
         weightInKg.isEmpty ||
         fitnessGoal.isEmpty ||
-        membershipStart.isEmpty) {
+        membershipStart.isEmpty ||
+        _selectedPlan == null ||
+        _selectedPlan!.isEmpty) {
       _toastService.warningToast("⚠️ Please fill in all required fields.");
       return;
     }
@@ -106,7 +145,9 @@ class _InsertPageState extends State<InsertPage> {
 
       final dateFormatter = DateFormat('yyyy-MM-dd');
       final startDate = DateTime.parse(membershipStart);
-      final nextPaymentDueDate = AppDateUtils.addOneMonth(startDate);
+
+      int monthsToAdd = AppDateUtils.getMonthsFromPlan(_selectedPlan!);
+      final nextPaymentDueDate = AppDateUtils.addMonths(startDate, monthsToAdd);
 
       await memberCollection.doc(newCustomId).set({
         'fullName': fullName,
@@ -117,6 +158,7 @@ class _InsertPageState extends State<InsertPage> {
         'notes': notes,
         'membershipStart': dateFormatter.format(startDate),
         'nextPaymentDue': dateFormatter.format(nextPaymentDueDate),
+        'subscriptionPlan': _selectedPlan,
         'createdAt': dateFormatter.format(DateTime.now()),
       });
 
@@ -126,6 +168,16 @@ class _InsertPageState extends State<InsertPage> {
     } catch (e) {
       _toastService.errorToast("❌ Failed to add member. Please try again.");
     }
+  }
+
+  void _clean() {
+    _fullNameController.clear();
+    _dateOfBirthController.clear();
+    _heightInCmController.clear();
+    _weightInKgController.clear();
+    _fitnessGoalController.clear();
+    _notesController.clear();
+    _membershipStartController.clear();
   }
 
   void _navigateToMainPage() {
@@ -191,6 +243,17 @@ class _InsertPageState extends State<InsertPage> {
                 placeholderText: 'Membership Starts',
                 icon: Icons.calendar_today,
                 dateController: _membershipStartController,
+              ),
+              const SizedBox(height: 12.0),
+              DropdownInput(
+                hintText: 'Select Payment Plan',
+                selectedItem: _selectedPlan,
+                itemOptions: _planOptions,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPlan = value;
+                  });
+                },
               ),
               const SizedBox(height: 36.0),
               NormalButton(

@@ -1,11 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gym_management/services/auth_service.dart';
 import 'package:gym_management/services/toast_service.dart';
+import 'package:gym_management/widgets/number_input.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gym_management/models/confirmation_message.dart';
 import 'package:gym_management/widgets/confirmation_dialog.dart';
 
+final AuthService _authService = AuthService();
 final ToastService _toastService = ToastService();
 
 /// SHOWS A CONFIRMATION DIALOG WHEN THE USER ATTEMPTS TO EXIT THE APP
@@ -103,5 +107,124 @@ Future<void> showEmailNotVerifiedDialog(BuildContext context, User user) async {
         ),
       ],
     ),
+  );
+}
+
+/// SHOW THE DIALOG FOR SETTING GYM PAYMENT PLANS.
+Future<void> showInitialSetupDialog(BuildContext context) async {
+  final TextEditingController oneMonthController = TextEditingController();
+  final TextEditingController threeMonthController = TextEditingController();
+  final TextEditingController sixMonthController = TextEditingController();
+  final TextEditingController oneYearController = TextEditingController();
+
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text(
+          '🏋️ Set Gym Payment Plans',
+          style: TextStyle(
+            fontSize: 20.0,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Required Plan',
+                style: TextStyle(fontSize: 16.0),
+              ),
+              const SizedBox(height: 12.0),
+              NumberInput(
+                placeholderText: "1 Month Plan Amount (Required)",
+                icon: Icons.payment_rounded,
+                normalController: oneMonthController,
+              ),
+              const SizedBox(height: 12.0),
+              const Text(
+                'Optional Plans',
+                style: TextStyle(fontSize: 16.0),
+              ),
+              const SizedBox(height: 12.0),
+              NumberInput(
+                placeholderText: "3 Months Plan Amount (Optional)",
+                icon: Icons.payment_rounded,
+                normalController: threeMonthController,
+              ),
+              const SizedBox(height: 12.0),
+              NumberInput(
+                placeholderText: "6 Months Plan Amount (Optional)",
+                icon: Icons.payment_rounded,
+                normalController: sixMonthController,
+              ),
+              const SizedBox(height: 12.0),
+              NumberInput(
+                placeholderText: "1 Year Plan Amount (Optional)",
+                icon: Icons.payment_rounded,
+                normalController: oneYearController,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (oneMonthController.text.trim().isEmpty) {
+                _toastService
+                    .warningToast('⚠️ Please enter the 1 Month plan amount');
+                return;
+              }
+
+              Map<String, double> plansData = {
+                '1month': double.parse(oneMonthController.text.trim()),
+              };
+              if (threeMonthController.text.trim().isNotEmpty) {
+                plansData['3months'] =
+                    double.parse(threeMonthController.text.trim());
+              }
+              if (sixMonthController.text.trim().isNotEmpty) {
+                plansData['6months'] =
+                    double.parse(sixMonthController.text.trim());
+              }
+              if (oneYearController.text.trim().isNotEmpty) {
+                plansData['1year'] =
+                    double.parse(oneYearController.text.trim());
+              }
+
+              final currentUser = _authService.currentUser;
+              try {
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(currentUser?.uid)
+                    .set(
+                  {'paymentPlans': plansData},
+                  SetOptions(merge: true),
+                );
+
+                _toastService.successToast('✅ Payment plans saved!');
+                Navigator.pop(context);
+              } catch (e) {
+                _toastService
+                    .errorToast('❌ Failed to save payment plans. Try again.');
+              }
+            },
+            child: const Text(
+              'Save Plans',
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ],
+      );
+    },
   );
 }

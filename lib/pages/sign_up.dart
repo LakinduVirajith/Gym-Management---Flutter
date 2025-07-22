@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gym_management/services/auth_service.dart';
 import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/utils/date_utils.dart';
-import 'package:gym_management/utils/input_validator.dart';
+import 'package:gym_management/validators/input_validator.dart';
 import 'package:gym_management/utils/dialog_utils.dart';
 import 'package:gym_management/widgets/normal_button.dart';
 import 'package:gym_management/widgets/normal_input.dart';
@@ -74,7 +74,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final dateFormatter = DateFormat('yyyy-MM-dd');
     final appStartDate = DateTime.now();
-    final paymentDueDate = AppDateUtils.addOneMonth(appStartDate);
+    final paymentDueDate = AppDateUtils.addMonths(appStartDate, 1);
 
     try {
       setState(() => _isLoading = true);
@@ -181,7 +181,10 @@ class _SignUpPageState extends State<SignUpPage> {
                   passwordController: _passwordController,
                 ),
                 const SizedBox(height: 36.0),
-                NormalButton(buttonText: 'CLEAN', onPressed: _clean),
+                NormalButton(
+                  buttonText: 'CLEAN',
+                  onPressed: _clean,
+                ),
                 const SizedBox(height: 12.0),
                 NormalButton(
                   buttonText: _isLoading ? 'Please wait...' : 'SIGN UP',

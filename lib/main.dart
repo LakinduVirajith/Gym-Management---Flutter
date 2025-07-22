@@ -67,6 +67,10 @@ class MainState extends State<Main> {
         context, '/contact', (Route<dynamic> route) => false);
   }
 
+  Future<void> _subscriptionPlan() async {
+    await showInitialSetupDialog(context);
+  }
+
   Future<void> _logout() async {
     final authService = AuthService();
     await authService.signOut();
@@ -85,17 +89,34 @@ class MainState extends State<Main> {
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.black,
-          title: const Text('Gym Management',
-              style: TextStyle(color: Colors.white)),
+          title: const Text(
+            'Gym Management',
+            style: TextStyle(color: Colors.white),
+          ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white),
-              onPressed: _logout,
-              tooltip: 'Logout',
+              icon: const Icon(
+                Icons.support_agent,
+                color: Colors.white,
+              ),
+              onPressed: _contactUs,
+              tooltip: 'Contact Us',
             ),
             IconButton(
-              icon: const Icon(Icons.question_answer, color: Colors.white),
-              onPressed: _contactUs,
+              icon: const Icon(
+                Icons.payment,
+                color: Colors.white,
+              ),
+              onPressed: _subscriptionPlan,
+              tooltip: 'Subscription Plan',
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.logout,
+                color: Colors.white,
+              ),
+              onPressed: _logout,
+              tooltip: 'Logout',
             ),
           ],
         ),
@@ -103,19 +124,28 @@ class MainState extends State<Main> {
         bottomNavigationBar: Container(
           color: Colors.black,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 15.0,
+              vertical: 20.0,
+            ),
             child: GNav(
               backgroundColor: Colors.black,
               color: Colors.white,
               activeColor: Colors.white,
               tabBackgroundColor: Colors.white10,
-              padding: const EdgeInsets.all(16),
-              gap: 8,
+              padding: const EdgeInsets.all(16.0),
+              gap: 8.0,
               selectedIndex: _selectedIndex,
               onTabChange: navigate,
               tabs: const [
-                GButton(icon: Icons.home_rounded, text: 'Home'),
-                GButton(icon: Icons.people_alt_rounded, text: 'List'),
+                GButton(
+                  icon: Icons.home_rounded,
+                  text: 'Home',
+                ),
+                GButton(
+                  icon: Icons.people_alt_rounded,
+                  text: 'List',
+                ),
               ],
             ),
           ),
@@ -125,8 +155,15 @@ class MainState extends State<Main> {
           backgroundColor: Colors.black,
           tooltip: 'Insert',
           shape: const CircleBorder(
-              side: BorderSide(color: Colors.white, width: 4)),
-          child: const Icon(Icons.add, color: Colors.white),
+            side: BorderSide(
+              color: Colors.white,
+              width: 4.0,
+            ),
+          ),
+          child: const Icon(
+            Icons.add,
+            color: Colors.white,
+          ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),

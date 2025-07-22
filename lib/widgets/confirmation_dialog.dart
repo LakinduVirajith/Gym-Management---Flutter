@@ -14,22 +14,37 @@ class ConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(confirmationMessage.topic),
-      content: Text(confirmationMessage.message),
+      title: Text(
+        confirmationMessage.topic,
+        style: const TextStyle(
+          fontSize: 22.0,
+        ),
+        textAlign: TextAlign.start,
+      ),
+      content: Text(
+        confirmationMessage.message,
+        style: const TextStyle(
+          fontSize: 14.0,
+        ),
+      ),
       actions: <Widget>[
-        TextButton(
+        ElevatedButton(
           child: Text(
             confirmationMessage.option1,
-            style: const TextStyle(color: Colors.black),
+            style: const TextStyle(
+              color: Colors.black,
+            ),
           ),
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
-        TextButton(
+        ElevatedButton(
           child: Text(
             confirmationMessage.option2,
-            style: const TextStyle(color: Colors.black),
+            style: const TextStyle(
+              color: Colors.black,
+            ),
           ),
           onPressed: () {
             Navigator.of(context).pop();

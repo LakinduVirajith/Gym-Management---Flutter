@@ -8,6 +8,7 @@ class Member {
   final String notes;
   final String startDate;
   final String nextPayment;
+  final String subscriptionPlan;
 
   Member({
     required this.fireID,
@@ -19,5 +20,6 @@ class Member {
     this.notes = '',
     required this.startDate,
     required this.nextPayment,
+    required this.subscriptionPlan,
   });
 }

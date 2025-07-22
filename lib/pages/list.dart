@@ -73,14 +73,15 @@ class _ListPageState extends State<ListPage> {
 
         return Member(
           fireID: doc.id,
-          fullName: data['fullName'] ?? '',
+          fullName: data['fullName'],
           age: calculatedAge,
-          height: data['heightInCm']?.toString() ?? '',
-          weight: data['weightInKg']?.toString() ?? '',
-          goal: data['fitnessGoal']?.toString() ?? '',
+          height: data['heightInCm'].toString(),
+          weight: data['weightInKg'].toString(),
+          goal: data['fitnessGoal'].toString(),
           notes: data['notes']?.toString() ?? '',
-          startDate: data['membershipStart'] ?? '',
-          nextPayment: data['nextPaymentDue'] ?? '',
+          startDate: data['membershipStart'],
+          nextPayment: data['nextPaymentDue'],
+          subscriptionPlan: data['subscriptionPlan'],
         );
       }).toList();
 
@@ -133,18 +134,18 @@ class _ListPageState extends State<ListPage> {
     }
   }
 
-  void _showDeleteConfirmationDialog(
+  void _showRemoveConfirmationDialog(
       BuildContext context, String name, String memberId) {
     showDialog(
       context: context,
       builder: (context) {
         return ConfirmationDialog(
           confirmationMessage: ConfirmationMessage(
-            topic: 'Remove Member',
+            topic: '🗑️ Remove Member',
             message:
-                'Are you sure you want to permanently remove "$name" from your member list? This action cannot be undone.',
-            option1: 'Cancel',
-            option2: 'Delete',
+                'Are you sure you want to permanently remove  $name ($memberId) from your member list? This action cannot be undone.',
+            option1: 'No, Keep',
+            option2: 'Yes, Remove',
           ),
           onConfirm: () async {
             await _deleteMember(memberId);
@@ -310,6 +311,12 @@ class _ListPageState extends State<ListPage> {
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
+                                          const Text(
+                                            'Subscription Plan:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -339,31 +346,28 @@ class _ListPageState extends State<ListPage> {
                                                   TextDecoration.underline,
                                             ),
                                           ),
-                                          if (member.height.isNotEmpty)
-                                            Text(
-                                              member.height,
-                                              style: const TextStyle(
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
+                                          Text(
+                                            member.height,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
                                             ),
-                                          if (member.weight.isNotEmpty)
-                                            Text(
-                                              member.weight,
-                                              style: const TextStyle(
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
+                                          ),
+                                          Text(
+                                            member.weight,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
                                             ),
-                                          if (member.height.isNotEmpty)
-                                            Text(
-                                              member.goal,
-                                              style: const TextStyle(
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
+                                          ),
+                                          Text(
+                                            member.goal,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
                                             ),
-                                          if (member.weight.isNotEmpty)
+                                          ),
+                                          if (member.notes.isNotEmpty)
                                             Text(
                                               member.notes,
                                               style: const TextStyle(
@@ -371,9 +375,22 @@ class _ListPageState extends State<ListPage> {
                                                     TextDecoration.underline,
                                               ),
                                             ),
-                                          Text(member.startDate),
+                                          Text(
+                                            member.startDate,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
                                           Text(
                                             member.nextPayment,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
+                                          Text(
+                                            member.subscriptionPlan,
                                             style: const TextStyle(
                                               decoration:
                                                   TextDecoration.underline,
@@ -383,6 +400,8 @@ class _ListPageState extends State<ListPage> {
                                       ),
                                     ),
                                     Container(
+                                      height: 42.0,
+                                      width: 42.0,
                                       decoration: const BoxDecoration(
                                         borderRadius: BorderRadius.all(
                                             Radius.circular(8.0)),
@@ -391,12 +410,14 @@ class _ListPageState extends State<ListPage> {
                                       child: IconButton(
                                         icon: const Icon(Icons.delete),
                                         color: Colors.white,
+                                        iconSize: 20.0,
                                         onPressed: () =>
-                                            _showDeleteConfirmationDialog(
+                                            _showRemoveConfirmationDialog(
                                           context,
                                           member.fullName,
                                           member.fireID,
                                         ),
+                                        tooltip: 'Remove Member',
                                       ),
                                     ),
                                   ],

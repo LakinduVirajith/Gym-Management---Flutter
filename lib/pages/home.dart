@@ -4,6 +4,7 @@ import 'package:gym_management/models/member.dart';
 import 'package:gym_management/services/auth_service.dart';
 import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/utils/date_utils.dart';
+import 'package:gym_management/utils/dialog_utils.dart';
 import 'package:gym_management/widgets/confirmation_dialog.dart';
 import 'package:gym_management/models/confirmation_message.dart';
 import 'package:intl/intl.dart';
@@ -55,6 +56,7 @@ class _HomePageState extends State<HomePage> {
           fullName: data['fullName'] ?? '',
           startDate: data['membershipStart'] ?? '',
           nextPayment: data['nextPaymentDue'] ?? '',
+          subscriptionPlan: data['subscriptionPlan'] ?? '',
         );
       }).toList();
 
@@ -74,12 +76,9 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _updateMemberPaymentDate(Member member) async {
+  Future<void> _updateMemberPaymentDate(Member member, DateTime newDate) async {
     final currentUser = _authService.currentUser;
-
-    DateTime newPaymentDate =
-        AppDateUtils.addOneMonth(DateTime.parse(member.nextPayment));
-    String formattedDate = DateFormat('yyyy-MM-dd').format(newPaymentDate);
+    String formattedDate = DateFormat('yyyy-MM-dd').format(newDate);
 
     try {
       await FirebaseFirestore.instance
@@ -89,30 +88,130 @@ class _HomePageState extends State<HomePage> {
           .doc(member.fireID)
           .update({'nextPaymentDue': formattedDate});
 
-      _toastService.successToast('🎉 Member payment updated successfully');
+      _toastService.successToast('🎉 Payment date updated successfully');
     } catch (e) {
-      _toastService.errorToast('❗Failed to update member payment');
+      _toastService.errorToast('❗Failed to update payment date');
     } finally {
       // REFRESH LIST AFTER UPDATE
       await _fetchMembers();
     }
   }
 
-  void _showConfirmationDialog(BuildContext context, Member member) {
+  void _showPaymentConfirmationDialog(BuildContext context, Member member) {
     showDialog(
       context: context,
       builder: (context) {
         return ConfirmationDialog(
           confirmationMessage: ConfirmationMessage(
-            topic: 'Payment Confirmation',
+            topic: '💵 Payment Confirmation',
             message:
-                'Are you sure you want to confirm ${member.fullName}\'s payment?',
-            option1: 'No',
-            option2: 'Yes',
+                'Are you sure you want to mark ${member.fullName}\'s (${member.fireID}) payment as received?',
+            option1: 'Cancel',
+            option2: 'Confirm',
           ),
           onConfirm: () async {
-            await _updateMemberPaymentDate(member);
+            final currentPaymentDate = DateTime.parse(member.nextPayment);
+            int monthsToAdd =
+                AppDateUtils.getMonthsFromPlan(member.subscriptionPlan);
+            final newPaymentDate =
+                AppDateUtils.addMonths(currentPaymentDate, monthsToAdd);
+
+            await _updateMemberPaymentDate(member, newPaymentDate);
             if (mounted) Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditDueDateDialog(BuildContext context, Member member) {
+    DateTime currentDueDate = DateTime.parse(member.nextPayment);
+    DateTime selectedDate = currentDueDate;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text(
+                '🗓️ Edit Next Payment Due Date',
+                style: TextStyle(
+                  fontSize: 18.0,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8.0),
+                  Text(
+                    'Current Due Date: ${DateFormat('yyyy-MM-dd').format(currentDueDate)}',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4.0),
+                  Text(
+                    'New Due Date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}',
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate:
+                            DateTime.now().subtract(const Duration(days: 365)),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 365 * 2)),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          selectedDate = picked;
+                        });
+                      }
+                    },
+                    icon: const Icon(
+                      Icons.calendar_today_sharp,
+                      color: Colors.black,
+                      size: 18.0,
+                    ),
+                    label: const Text(
+                      'Pick New Date',
+                      style: TextStyle(
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await _updateMemberPaymentDate(member, selectedDate);
+                    if (mounted) Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            );
           },
         );
       },
@@ -126,19 +225,19 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (_allMembers.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 18.0),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18.0),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.fitness_center,
                 size: 48,
                 color: Colors.grey,
               ),
-              SizedBox(height: 12),
-              Text(
+              const SizedBox(height: 12),
+              const Text(
                 'No gym members yet!',
                 style: TextStyle(
                   fontSize: 18,
@@ -146,14 +245,28 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.grey,
                 ),
               ),
-              SizedBox(height: 6),
-              Text(
+              const SizedBox(height: 6),
+              const Text(
                 'Add your first gym member to start tracking progress and payments.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
                 ),
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: const Icon(
+                  Icons.add_card,
+                  color: Colors.black,
+                ),
+                label: const Text(
+                  'Setup Payment Plans',
+                  style: TextStyle(
+                    color: Colors.black,
+                  ),
+                ),
+                onPressed: () => showInitialSetupDialog(context),
               ),
             ],
           ),
@@ -195,7 +308,7 @@ class _HomePageState extends State<HomePage> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
               child: const Text(
-                '🧾 Up-to-Date Payments',
+                '🗒️ Up-to-Date Payments',
                 style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
               ),
             ),
@@ -258,6 +371,12 @@ class _HomePageState extends State<HomePage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  Text(
+                    'Subscription Plan:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -289,19 +408,50 @@ class _HomePageState extends State<HomePage> {
                       decoration: TextDecoration.underline,
                     ),
                   ),
+                  Text(
+                    member.subscriptionPlan,
+                    style: const TextStyle(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ],
               ),
             ),
-            Container(
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                color: Colors.black,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.done),
-                color: Colors.white,
-                onPressed: () => _showConfirmationDialog(context, member),
-              ),
+            Column(
+              children: [
+                Container(
+                  height: 42.0,
+                  width: 42.0,
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                    color: Colors.black87,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.attach_money),
+                    color: Colors.white,
+                    iconSize: 20.0,
+                    onPressed: () =>
+                        _showPaymentConfirmationDialog(context, member),
+                    tooltip: 'Payment Confirmation',
+                  ),
+                ),
+                const SizedBox(height: 12.0),
+                Container(
+                  height: 42.0,
+                  width: 42.0,
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                    color: Colors.black87,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.edit_calendar),
+                    color: Colors.white,
+                    iconSize: 20.0,
+                    onPressed: () => _showEditDueDateDialog(context, member),
+                    tooltip: 'Edit Payment Due Date',
+                  ),
+                ),
+              ],
             ),
           ],
         ),
