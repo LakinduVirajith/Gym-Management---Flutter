@@ -106,10 +106,12 @@ class _ListPageState extends State<ListPage> {
         _filteredMembers = _allMembers.where((member) {
           final idMatch = member.fireID.toLowerCase().contains(searchText);
           final nameMatch = member.fullName.toLowerCase().contains(searchText);
+          final mobileMatch =
+              member.mobileNumber.toLowerCase().contains(searchText);
           final goalMatch = member.goal.toLowerCase().contains(searchText);
           final notesMatch = member.notes.toLowerCase().contains(searchText);
 
-          return nameMatch || idMatch || goalMatch || notesMatch;
+          return idMatch || nameMatch || mobileMatch || goalMatch || notesMatch;
         }).toList();
       }
     });
@@ -214,7 +216,7 @@ class _ListPageState extends State<ListPage> {
                                 Text(
                                   _allMembers.isEmpty
                                       ? 'Start building your fitness community by adding members.'
-                                      : 'No matching members found. Try searching by name, goal, notes, or member ID.',
+                                      : 'No matching members found. Try searching by member ID, name, mobile, goal or notes',
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
