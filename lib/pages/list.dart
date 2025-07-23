@@ -17,12 +17,12 @@ class ListPage extends StatefulWidget {
 
 class _ListPageState extends State<ListPage> {
   final TextEditingController _searchController = TextEditingController();
-
   final _authService = AuthService();
   final _toastService = ToastService();
 
   List<Member> _allMembers = [];
   List<Member> _filteredMembers = [];
+  Set<String> _expandedMembers = {}; // 🔥 Track expanded cards
   bool _isLoading = false;
 
   @override
@@ -45,9 +45,7 @@ class _ListPageState extends State<ListPage> {
     try {
       final currentUser = _authService.currentUser;
       if (currentUser == null) {
-        _toastService
-            .warningToast("⚠️ Your session has expired. Please log in again.");
-
+        _toastService.warningToast("⚠️ Your session has expired. Please log in again.");
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
         return;
       }
@@ -60,7 +58,6 @@ class _ListPageState extends State<ListPage> {
 
       final members = snapshot.docs.map((doc) {
         final data = doc.data();
-
         final birthdayStr = data['dateOfBirth'];
         int calculatedAge = 0;
 
@@ -104,14 +101,11 @@ class _ListPageState extends State<ListPage> {
         _filteredMembers = _allMembers;
       } else {
         _filteredMembers = _allMembers.where((member) {
-          final idMatch = member.fireID.toLowerCase().contains(searchText);
-          final nameMatch = member.fullName.toLowerCase().contains(searchText);
-          final mobileMatch =
-              member.mobileNumber.toLowerCase().contains(searchText);
-          final goalMatch = member.goal.toLowerCase().contains(searchText);
-          final notesMatch = member.notes.toLowerCase().contains(searchText);
-
-          return idMatch || nameMatch || mobileMatch || goalMatch || notesMatch;
+          return member.fireID.toLowerCase().contains(searchText) ||
+              member.fullName.toLowerCase().contains(searchText) ||
+              member.mobileNumber.toLowerCase().contains(searchText) ||
+              member.goal.toLowerCase().contains(searchText) ||
+              member.notes.toLowerCase().contains(searchText);
         }).toList();
       }
     });
@@ -132,21 +126,18 @@ class _ListPageState extends State<ListPage> {
     } catch (e) {
       _toastService.errorToast('❌ Failed to delete member. Please try again.');
     } finally {
-      // REFRESH LIST AFTER DELETION
       await _fetchMembers();
     }
   }
 
-  void _showRemoveConfirmationDialog(
-      BuildContext context, String name, String memberId) {
+  void _showRemoveConfirmationDialog(BuildContext context, String name, String memberId) {
     showDialog(
       context: context,
       builder: (context) {
         return ConfirmationDialog(
           confirmationMessage: ConfirmationMessage(
             topic: '🗑️ Remove Member',
-            message:
-                'Are you sure you want to permanently remove  $name ($memberId) from your member list? This action cannot be undone.',
+            message: 'Are you sure you want to permanently remove $name ($memberId)? This action cannot be undone.',
             option1: 'No, Keep',
             option2: 'Yes, Remove',
           ),
@@ -167,19 +158,12 @@ class _ListPageState extends State<ListPage> {
           children: [
             if (_allMembers.isNotEmpty)
               Container(
-                padding: const EdgeInsets.only(
-                  top: 8.0,
-                  bottom: 20.0,
-                  left: 12.0,
-                  right: 12.0,
-                ),
+                padding: const EdgeInsets.all(12.0),
                 color: Colors.black,
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(12.0),
-                    ),
+                    borderRadius: BorderRadius.circular(12.0),
                   ),
                   child: NormalInput(
                     placeholderText: 'Search',
@@ -192,250 +176,92 @@ class _ListPageState extends State<ListPage> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredMembers.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.group_outlined,
-                                  size: 48,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'No Members Found',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  _allMembers.isEmpty
-                                      ? 'Start building your fitness community by adding members.'
-                                      : 'No matching members found. Try searching by member ID, name, mobile, goal or notes',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
+                      ? const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.group_outlined, size: 48, color: Colors.grey),
+                              SizedBox(height: 12),
+                              Text(
+                                'No Members Found',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Start adding members or try searching by ID, name, mobile, goal, or notes.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 14, color: Colors.grey),
+                              ),
+                            ],
                           ),
                         )
                       : ListView.builder(
                           itemCount: _filteredMembers.length,
                           itemBuilder: (context, index) {
-                            // REVERSE THE LIST TO SHOW NEWEST FIRST
-                            final reversedIndex =
-                                _filteredMembers.length - 1 - index;
+                            final reversedIndex = _filteredMembers.length - 1 - index;
                             final member = _filteredMembers[reversedIndex];
+                            final isExpanded = _expandedMembers.contains(member.fireID);
 
                             return Container(
                               margin: const EdgeInsets.all(12.0),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                border: Border.all(
-                                  color:
-                                      const Color.fromARGB(255, 110, 132, 255),
-                                  width: 2.0,
-                                ),
+                                border: Border.all(color: const Color.fromARGB(255, 110, 132, 255), width: 2.0),
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.all(16.0),
-                                child: Row(
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Member ID:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const Text(
-                                            'Full Name:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const Text(
-                                            'Age:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          if (member.height.isNotEmpty)
-                                            const Text(
-                                              'Height (cm):',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          if (member.weight.isNotEmpty)
-                                            const Text(
-                                              'Weight (kg):',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          if (member.height.isNotEmpty)
-                                            const Text(
-                                              'Fitness Goal:',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          if (member.weight.isNotEmpty)
-                                            const Text(
-                                              'Additional Notes:',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          const Text(
-                                            'Membership Start:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const Text(
-                                            'Next Payment Due:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const Text(
-                                            'Subscription Plan:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const Text(
-                                            'Mobile Number:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            member.fireID,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          Text(
-                                            member.fullName,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${member.age}',
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          Text(
-                                            member.height,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          Text(
-                                            member.weight,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          Text(
-                                            member.goal,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          if (member.notes.isNotEmpty)
-                                            Text(
-                                              member.notes,
-                                              style: const TextStyle(
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
-                                            ),
-                                          Text(
-                                            member.startDate,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          Text(
-                                            member.nextPayment,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          Text(
-                                            member.subscriptionPlan,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                          Text(
-                                            member.mobileNumber,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      height: 42.0,
-                                      width: 42.0,
-                                      decoration: const BoxDecoration(
-                                        borderRadius: BorderRadius.all(
-                                            Radius.circular(8.0)),
-                                        color: Colors.black,
-                                      ),
-                                      child: IconButton(
-                                        icon: const Icon(Icons.delete),
-                                        color: Colors.white,
-                                        iconSize: 20.0,
-                                        onPressed: () =>
-                                            _showRemoveConfirmationDialog(
-                                          context,
-                                          member.fullName,
-                                          member.fireID,
+                                    // BASIC INFO
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                         '${member.fullName} (${member.fireID})',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                         ),
-                                        tooltip: 'Remove Member',
-                                      ),
+                                        IconButton(
+                                          icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
+                                          onPressed: () {
+                                            setState(() {
+                                              if (isExpanded) {
+                                                _expandedMembers.remove(member.fireID);
+                                              } else {
+                                                _expandedMembers.add(member.fireID);
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ],
                                     ),
+                                    const SizedBox(height: 6),
+                                    Text('Mobile: ${member.mobileNumber}'),
+                                    Text('Goal: ${member.goal}'),
+                                    if (member.notes.isNotEmpty) Text('Notes: ${member.notes}'),
+                                    // EXPANDED DETAILS
+                                    if (isExpanded) ...[
+                                      const SizedBox(height: 12),
+                                     
+                                      Text('Age: ${member.age}'),
+                                      if (member.height.isNotEmpty) Text('Height: ${member.height} cm'),
+                                      if (member.weight.isNotEmpty) Text('Weight: ${member.weight} kg'),
+                                      Text('Membership Start: ${member.startDate}'),
+                                      Text('Next Payment Due: ${member.nextPayment}'),
+                                      Text('Subscription Plan: ${member.subscriptionPlan}'),
+                                      const SizedBox(height: 10),
+                                      ElevatedButton.icon(
+                                        onPressed: () => _showRemoveConfirmationDialog(
+                                            context, member.fullName, member.fireID),
+                                        icon: const Icon(Icons.delete),
+                                        label: const Text("Remove Member"),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
