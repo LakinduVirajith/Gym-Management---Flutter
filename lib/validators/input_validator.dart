@@ -1,11 +1,11 @@
 class InputValidator {
-  static String? validateMobileNumber(String value) {
-    if (value.isEmpty) return '📱 Mobile number is required';
-    if (!RegExp(r'^\d{10}$').hasMatch(value)) {
-      return '📞 Mobile number must be 10 digits';
-    }
-    return null;
-  }
+  // static String? validateMobileNumber(String value) {
+  //   if (value.isEmpty) return '📱 Mobile number is required';
+  //   if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+  //     return '📞 Mobile number must be 10 digits';
+  //   }
+  //   return null;
+  // }
 
   static String? validateGymName(String value) {
     if (value.isEmpty) return '🏋️ Gym name is required';

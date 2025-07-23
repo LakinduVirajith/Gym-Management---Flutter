@@ -121,7 +121,7 @@ Future<void> showInitialSetupDialog(BuildContext context) async {
   final doc =
       await FirebaseFirestore.instance.collection('users').doc(user?.uid).get();
 
-  final plans = doc.data()?['paymentPlans'];
+  final plans = doc.data()?['paymentPlans']?? {};
   final currentValues = {
     '1month': (plans['1month'] is num)
         ? (plans['1month'] as num).toInt().toString()

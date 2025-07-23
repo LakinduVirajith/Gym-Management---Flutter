@@ -61,13 +61,13 @@ class _SignUpPageState extends State<SignUpPage> {
 
     // VALIDATE INPUTS
     final emailError = InputValidator.validateEmail(email);
-    final mobileError = InputValidator.validateMobileNumber(mobileNumber);
+    //final mobileError = InputValidator.validateMobileNumber(mobileNumber);
     final nameError = InputValidator.validateGymName(gymName);
     final addressError = InputValidator.validateGymAddress(gymAddress);
     final passError = InputValidator.validatePassword(password);
 
     final errorMessage =
-        mobileError ?? nameError ?? addressError ?? emailError ?? passError;
+        nameError ?? addressError ?? emailError ?? passError;
 
     if (errorMessage != null) {
       _toastService.warningToast(errorMessage);
