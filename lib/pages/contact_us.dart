@@ -1,10 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:gym_management/services/toast_service.dart';
-import 'package:gym_management/widgets/normal_button.dart';
-import 'package:gym_management/widgets/normal_text_area.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:gym_management/widgets/normal_button.dart';
+import 'package:gym_management/widgets/normal_input.dart';
 
 class ContactUsPage extends StatefulWidget {
   const ContactUsPage({super.key});
@@ -14,167 +11,112 @@ class ContactUsPage extends StatefulWidget {
 }
 
 class _ContactUsPageState extends State<ContactUsPage> {
-  late final TextEditingController _messageController;
-  final ToastService _toastService = ToastService();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _messageController = TextEditingController();
-  }
+  Future<void> _sendEmail() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final message = _messageController.text.trim();
 
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
-
-  void _clean() {
-    _messageController.clear();
-  }
-
-  Future<void> _sendFeedback() async {
-    final String message = _messageController.text.trim();
-
-    if (message.isEmpty) {
-      _toastService.warningToast('Please fill in the message field');
+    if (name.isEmpty || email.isEmpty || message.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Please fill in all the fields.")),
+      );
       return;
     }
 
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userName = prefs.getString('user_name');
-      final String? mobileNumber = prefs.getString('mobile_number');
-
-      await FirebaseFirestore.instance.collection('feedbacks').add({
-        'user_name': userName,
-        'mobile_number': mobileNumber,
-        'message': message,
-        'created_at': DateTime.now().toIso8601String(),
-      });
-
-      _clean();
-      _toastService.successToast('Feedback sent successfully');
-    } catch (e) {
-      _toastService.errorToast('Failed to send feedback');
-    }
-  }
-
-  Future<void> _sendEmail() async {
     final Uri emailUri = Uri(
       scheme: 'mailto',
-      path: 'vp.code.labs@gmail.com',
+      path: 'alccodelab@gmail.com',
+      query: Uri.encodeFull(
+        'subject=Message from $name&body=From: $name\nEmail: $email\n\n$message',
+      ),
     );
 
     if (await canLaunchUrl(emailUri)) {
       await launchUrl(emailUri);
     } else {
-      _toastService
-          .errorToast('Could not launch email app. Please try manually.');
-    }
-  }
-
-  Future<void> _makePhoneCall() async {
-    final Uri phoneUri = Uri(
-      scheme: 'tel',
-      path: '+94772780771',
-    );
-
-    if (await canLaunchUrl(phoneUri)) {
-      await launchUrl(phoneUri);
-    } else {
-      _toastService
-          .errorToast('Could not launch phone dialer. Please try manually.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Could not open email app.")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 48.0),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context); // phone back button
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('📞 Contact Us'),
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context), // app bar back
+          ),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24.0),
               const Text(
-                'Company Information',
-                style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.w500),
+                "We're here to help!",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 18.0),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16.0),
-                child: Image.asset(
-                  'assets/company_logo.png',
-                  width: 100,
-                  height: 100,
+              const SizedBox(height: 8),
+              const Text(
+                "If you have any questions, feedback, or suggestions, feel free to reach out.",
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              NormalInput(
+                placeholderText: 'Full Name',
+                icon: Icons.person,
+                normalController: _nameController,
+              ),
+              const SizedBox(height: 12),
+              NormalInput(
+                placeholderText: 'Email Address',
+                icon: Icons.email,
+                normalController: _emailController,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _messageController,
+                maxLines: 6,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.message),
+                  hintText: "Your message",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
               ),
-              const SizedBox(height: 18.0),
-              _infoTile(
-                label: 'Email: vp.code.labs@gmail.com',
-                icon: Icons.send,
-                onPressed: _sendEmail,
+              const SizedBox(height: 24),
+              Center(
+                child: NormalButton(
+                  buttonText: 'SEND MESSAGE',
+                  onPressed: _sendEmail,
+                ),
               ),
-              const SizedBox(height: 12.0),
-              _infoTile(
-                label: 'Mobile: +94 77 278 0771',
-                icon: Icons.call,
-                onPressed: _makePhoneCall,
-              ),
-              const SizedBox(height: 24.0),
-              const Text(
-                'Contact Us',
-                style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 12.0),
-              NormalTextArea(
-                placeholderText:
-                    "Your feedback is valuable to us! Help us improve our service by sharing your thoughts or suggesting new features.",
-                normalController: _messageController,
-              ),
-              const SizedBox(height: 18.0),
-              NormalButton(buttonText: 'CLEAN', onPressed: _clean),
-              const SizedBox(height: 12.0),
-              NormalButton(buttonText: 'SEND', onPressed: _sendFeedback),
+              const SizedBox(height: 36),
+              const Divider(),
+              const SizedBox(height: 12),
+              const Text("📍 Address: Gym HQ, Colombo, Sri Lanka"),
+              const SizedBox(height: 6),
+              const Text("📞 Phone: +94 71 123 4567"),
+              const SizedBox(height: 6),
+              const Text("✉️ Email: alccodelab@gmail.com"),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _infoTile({
-    required String label,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      padding: const EdgeInsets.only(left: 12.0, right: 4.0),
-      decoration: BoxDecoration(
-        border: Border.all(width: 2.0, color: Colors.black87),
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(child: Text(label)),
-          Container(
-            margin: const EdgeInsets.all(4.0),
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: IconButton(
-              icon: Icon(icon, color: Colors.white),
-              onPressed: onPressed,
-            ),
-          ),
-        ],
       ),
     );
   }
