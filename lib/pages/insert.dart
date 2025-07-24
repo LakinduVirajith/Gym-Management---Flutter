@@ -37,7 +37,8 @@ class _InsertPageState extends State<InsertPage> {
   String _fullMobileNumber = '';
   List<String> _planOptions = [];
   String? _selectedPlan;
-
+  String? _selectedGender;
+  final List<String> _genderOptions = ['Male', 'Female', 'Other'];
   @override
   void initState() {
     super.initState();
@@ -97,7 +98,8 @@ class _InsertPageState extends State<InsertPage> {
         fitnessGoal.isEmpty ||
         membershipStart.isEmpty ||
         mobileNumber.isEmpty ||
-        _selectedPlan!.isEmpty) {
+        _selectedPlan!.isEmpty ||
+        _selectedGender!.isEmpty) {
       _toastService.warningToast("⚠️ Please fill in all required fields.");
       return;
     }
@@ -155,6 +157,7 @@ class _InsertPageState extends State<InsertPage> {
 
       await memberCollection.doc(newCustomId).set({
         'fullName': fullName,
+        'gender': _selectedGender,
         'dateOfBirth': dateFormatter.format(DateTime.parse(dateOfBirth)),
         'heightInCm': double.parse(heightInCm),
         'weightInKg': double.parse(weightInKg),
@@ -227,6 +230,17 @@ class _InsertPageState extends State<InsertPage> {
                 placeholderText: 'Full Name',
                 icon: Icons.person,
                 normalController: _fullNameController,
+              ),
+              const SizedBox(height: 12.0),
+              DropdownInput(
+                hintText: 'Gender',
+                selectedItem: _selectedGender,
+                itemOptions: _genderOptions,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedGender = value;
+                  });
+                },
               ),
               const SizedBox(height: 12.0),
               DateInput(

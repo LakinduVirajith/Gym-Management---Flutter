@@ -1,6 +1,7 @@
 class Member {
   final String fireID;
   final String fullName;
+  final String gender;
   final int age;
   final String height;
   final String weight;
@@ -14,6 +15,7 @@ class Member {
   Member({
     required this.fireID,
     required this.fullName,
+    required this.gender,
     this.age = 0,
     this.height = '',
     this.weight = '',

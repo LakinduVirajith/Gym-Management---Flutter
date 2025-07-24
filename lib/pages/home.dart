@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage> {
         return Member(
           fireID: doc.id,
           fullName: data['fullName'] ?? '',
+          gender: data['gender'] ?? '',
           startDate: data['membershipStart'] ?? '',
           nextPayment: data['nextPaymentDue'] ?? '',
           subscriptionPlan: data['subscriptionPlan'] ?? '',

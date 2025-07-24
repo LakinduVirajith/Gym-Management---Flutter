@@ -71,6 +71,7 @@ class _ListPageState extends State<ListPage> {
         return Member(
           fireID: doc.id,
           fullName: data['fullName'],
+         gender: data['gender']?.toString() ?? 'N/A',
           age: calculatedAge,
           height: data['heightInCm'].toString(),
           weight: data['weightInKg'].toString(),
@@ -245,6 +246,7 @@ class _ListPageState extends State<ListPage> {
                                       const SizedBox(height: 12),
                                      
                                       Text('Age: ${member.age}'),
+                                      Text('Gender: ${member.gender}'),
                                       if (member.height.isNotEmpty) Text('Height: ${member.height} cm'),
                                       if (member.weight.isNotEmpty) Text('Weight: ${member.weight} kg'),
                                       Text('Membership Start: ${member.startDate}'),
