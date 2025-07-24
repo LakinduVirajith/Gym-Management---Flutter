@@ -5,8 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gym_management/services/auth_service.dart';
 import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/utils/date_utils.dart';
-import 'package:gym_management/validators/input_validator.dart';
 import 'package:gym_management/utils/dialog_utils.dart';
+import 'package:gym_management/validators/sign_up_validators.dart';
 import 'package:gym_management/widgets/intl_phone_field.dart';
 import 'package:gym_management/widgets/normal_button.dart';
 import 'package:gym_management/widgets/normal_input.dart';
@@ -60,14 +60,15 @@ class _SignUpPageState extends State<SignUpPage> {
     final password = _passwordController.text.trim();
 
     // VALIDATE INPUTS
-    final emailError = InputValidator.validateEmail(email);
-    //final mobileError = InputValidator.validateMobileNumber(mobileNumber);
-    final nameError = InputValidator.validateGymName(gymName);
-    final addressError = InputValidator.validateGymAddress(gymAddress);
-    final passError = InputValidator.validatePassword(password);
+    final emailError = SignUpValidators.validateEmail(email);
+    final mobileError = SignUpValidators.validateMobileNumber(mobileNumber);
+    final nameError = SignUpValidators.validateFitnessCenterName(gymName);
+    final addressError =
+        SignUpValidators.validateFitnessCenterAddress(gymAddress);
+    final passError = SignUpValidators.validatePassword(password);
 
     final errorMessage =
-        nameError ?? addressError ?? emailError ?? passError;
+        emailError ?? nameError ?? mobileError ?? addressError ?? passError;
 
     if (errorMessage != null) {
       _toastService.warningToast(errorMessage);
@@ -103,7 +104,7 @@ class _SignUpPageState extends State<SignUpPage> {
       await prefs.setString(
           'payment_due_date', paymentDueDate.toIso8601String());
 
-      _toastService.successToast('🎉 Sign up successful!');
+      _toastService.successToast('✅ Sign up successful!');
       await showEmailVerificationDialog(context);
       _clean();
     } on FirebaseAuthException catch (e) {

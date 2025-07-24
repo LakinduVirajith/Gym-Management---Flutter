@@ -33,7 +33,7 @@ class DropdownInput extends StatelessWidget {
           isExpanded: true,
           hint: Text(
             hintText,
-            style: const TextStyle(fontSize: 14.0, color: Colors.black54),
+            style: const TextStyle(fontSize: 14.0, color: Colors.black),
           ),
           icon: const Icon(Icons.arrow_drop_down),
           items: itemOptions.map((plan) {

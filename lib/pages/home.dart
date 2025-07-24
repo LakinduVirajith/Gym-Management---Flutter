@@ -7,6 +7,7 @@ import 'package:gym_management/utils/date_utils.dart';
 import 'package:gym_management/utils/dialog_utils.dart';
 import 'package:gym_management/widgets/confirmation_dialog.dart';
 import 'package:gym_management/models/confirmation_message.dart';
+import 'package:gym_management/widgets/dropdown_input.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
@@ -54,10 +55,10 @@ class _HomePageState extends State<HomePage> {
         return Member(
           fireID: doc.id,
           fullName: data['fullName'] ?? '',
-          gender: data['gender'] ?? '',
           startDate: data['membershipStart'] ?? '',
           nextPayment: data['nextPaymentDue'] ?? '',
           subscriptionPlan: data['subscriptionPlan'] ?? '',
+          totalPaid: data['totalPaid'] ?? 0,
         );
       }).toList();
 
@@ -77,21 +78,60 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _updateMemberPaymentDate(Member member, DateTime newDate) async {
-    final currentUser = _authService.currentUser;
+  Future<void> _updateMemberPaymentDate(
+    Member member,
+    DateTime newDate, {
+    String? newPlanLabel,
+  }) async {
+    final userId = _authService.currentUser?.uid;
+    if (userId == null) return;
+
     String formattedDate = DateFormat('yyyy-MM-dd').format(newDate);
 
     try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      final plans =
+          Map<String, dynamic>.from(doc.data()?['paymentPlans'] ?? {});
+
+      // USE NEW PLAN IF PROVIDED, OTHERWISE EXISTING MEMBER PLAN
+      final effectivePlanLabel = (newPlanLabel?.isNotEmpty ?? false)
+          ? newPlanLabel!
+          : member.subscriptionPlan;
+
+      // FIND RAW KEY THAT MATCHES THIS LABEL
+      final rawPlanKey = plans.keys.firstWhere(
+        (k) => AppDateUtils.formatPlanLabel(k) == effectivePlanLabel,
+        orElse: () => '',
+      );
+
+      final paymentAmount = (plans[rawPlanKey] ?? 0) as num;
+
+      // PREPARE DATA TO UPDATE
+      final updateData = {
+        'nextPaymentDue': formattedDate,
+        'totalPaid': member.totalPaid + paymentAmount,
+      };
+
+      // ONLY UPDATE PLAN IF CHANGED
+      if ((newPlanLabel?.isNotEmpty ?? false) &&
+          newPlanLabel != member.subscriptionPlan) {
+        updateData['subscriptionPlan'] = newPlanLabel!;
+      }
+
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUser?.uid)
+          .doc(userId)
           .collection('members')
           .doc(member.fireID)
-          .update({'nextPaymentDue': formattedDate});
+          .update(updateData);
 
-      _toastService.successToast('🎉 Payment date updated successfully');
+      _toastService.successToast('🎉 Updated successfully');
     } catch (e) {
-      _toastService.errorToast('❗Failed to update payment date');
+      _toastService.errorToast('❗Failed to Update');
     } finally {
       // REFRESH LIST AFTER UPDATE
       await _fetchMembers();
@@ -125,9 +165,22 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showEditDueDateDialog(BuildContext context, Member member) {
+  Future<void> _showEditDueDateDialog(
+      BuildContext context, Member member) async {
+    final userId = _authService.currentUser?.uid;
+    if (userId == null) return;
+
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final plansMap =
+        Map<String, dynamic>.from(doc.data()?['paymentPlans'] ?? {});
+
     DateTime currentDueDate = DateTime.parse(member.nextPayment);
     DateTime selectedDate = currentDueDate;
+    String selectedPlan = member.subscriptionPlan;
+
+    List<String> formattedPlans =
+        plansMap.keys.map((key) => AppDateUtils.formatPlanLabel(key)).toList();
 
     showDialog(
       context: context,
@@ -136,9 +189,10 @@ class _HomePageState extends State<HomePage> {
           builder: (context, setState) {
             return AlertDialog(
               title: const Text(
-                '🗓️ Edit Next Payment Due Date',
+                '💳 Edit Payment Due Date',
                 style: TextStyle(
                   fontSize: 18.0,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               content: Column(
@@ -148,7 +202,9 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 8.0),
                   Text(
                     'Current Due Date: ${DateFormat('yyyy-MM-dd').format(currentDueDate)}',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 4.0),
                   Text(
@@ -187,6 +243,25 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12.0),
+                  const Text(
+                    '📋 Edit Selected Plan',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12.0),
+                  DropdownInput(
+                    hintText: 'Select Payment Plan',
+                    selectedItem: selectedPlan,
+                    itemOptions: formattedPlans,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedPlan = value!;
+                      });
+                    },
+                  ),
                 ],
               ),
               actions: [
@@ -201,7 +276,8 @@ class _HomePageState extends State<HomePage> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    await _updateMemberPaymentDate(member, selectedDate);
+                    await _updateMemberPaymentDate(member, selectedDate,
+                        newPlanLabel: selectedPlan);
                     if (mounted) Navigator.of(context).pop();
                   },
                   child: const Text(

@@ -5,6 +5,8 @@ import 'package:gym_management/services/auth_service.dart';
 import 'package:gym_management/services/toast_service.dart';
 import 'package:gym_management/utils/date_utils.dart';
 import 'package:gym_management/utils/dialog_utils.dart';
+import 'package:gym_management/validators/insert_validators.dart';
+import 'package:gym_management/validators/sign_up_validators.dart';
 import 'package:gym_management/widgets/date_input.dart';
 import 'package:gym_management/widgets/dropdown_input.dart';
 import 'package:gym_management/widgets/intl_phone_field.dart';
@@ -35,10 +37,13 @@ class _InsertPageState extends State<InsertPage> {
   final _toastService = ToastService();
 
   String _fullMobileNumber = '';
+  Map<String, dynamic> _paymentPlanData = {};
   List<String> _planOptions = [];
   String? _selectedPlan;
+
   String? _selectedGender;
   final List<String> _genderOptions = ['Male', 'Female', 'Other'];
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +82,7 @@ class _InsertPageState extends State<InsertPage> {
         if (_planOptions.isNotEmpty) {
           _selectedPlan = _planOptions.first;
         }
+        _paymentPlanData = Map<String, dynamic>.from(plans);
       });
     }
   }
@@ -90,17 +96,37 @@ class _InsertPageState extends State<InsertPage> {
     final notes = _notesController.text.trim();
     final membershipStart = _membershipStartController.text.trim();
     final mobileNumber = _fullMobileNumber.trim();
+    final selectedGender = _selectedGender;
+    final selectedPlan = _selectedPlan;
 
-    if (fullName.isEmpty ||
-        dateOfBirth.isEmpty ||
-        heightInCm.isEmpty ||
-        weightInKg.isEmpty ||
-        fitnessGoal.isEmpty ||
-        membershipStart.isEmpty ||
-        mobileNumber.isEmpty ||
-        _selectedPlan!.isEmpty ||
-        _selectedGender!.isEmpty) {
-      _toastService.warningToast("⚠️ Please fill in all required fields.");
+    final nameError = InsertValidators.validateName(fullName);
+    final dobError = InsertValidators.validateDateOfBirth(dateOfBirth);
+    final heightError = InsertValidators.validateHeight(heightInCm);
+    final weightError = InsertValidators.validateWeight(weightInKg);
+    final goalError = InsertValidators.validateGoal(fitnessGoal);
+    final startError =
+        InsertValidators.validateMembershipStart(membershipStart);
+    final mobileError = SignUpValidators.validateMobileNumber(mobileNumber);
+
+    final genderError = selectedGender == null || selectedGender.isEmpty
+        ? '⚧️ Please select a gender before continuing.'
+        : null;
+    final planError = selectedPlan == null || selectedPlan.isEmpty
+        ? '📅 Please select a subscription plan'
+        : null;
+
+    final errorMessage = nameError ??
+        genderError ??
+        dobError ??
+        heightError ??
+        weightError ??
+        goalError ??
+        startError ??
+        mobileError ??
+        planError;
+
+    if (errorMessage != null) {
+      _toastService.warningToast("⚠️ $errorMessage");
       return;
     }
 
@@ -125,14 +151,13 @@ class _InsertPageState extends State<InsertPage> {
 
       // GET ALL MEMBERS
       final snapshot = await memberCollection.get();
-      String newCustomId;
-
       final ids = snapshot.docs.map((doc) => doc.id).toList();
 
       // FILTER ONLY CURRENT YEAR IDS
       final currentYearIds =
           ids.where((id) => id.contains('-$yearSuffix-')).toList();
 
+      String newCustomId;
       if (currentYearIds.isNotEmpty) {
         final maxNumber = currentYearIds.map((id) {
           final parts = id.split('-');
@@ -152,12 +177,19 @@ class _InsertPageState extends State<InsertPage> {
       final dateFormatter = DateFormat('yyyy-MM-dd');
       final startDate = DateTime.parse(membershipStart);
 
-      int monthsToAdd = AppDateUtils.getMonthsFromPlan(_selectedPlan!);
+      int monthsToAdd = AppDateUtils.getMonthsFromPlan(selectedPlan!);
       final nextPaymentDueDate = AppDateUtils.addMonths(startDate, monthsToAdd);
+
+      final rawPlanKey = _paymentPlanData.keys.firstWhere(
+        (k) => AppDateUtils.formatPlanLabel(k) == selectedPlan,
+        orElse: () => '',
+      );
+      final paymentAmount =
+          rawPlanKey.isNotEmpty ? _paymentPlanData[rawPlanKey] ?? 0 : 0;
 
       await memberCollection.doc(newCustomId).set({
         'fullName': fullName,
-        'gender': _selectedGender,
+        'gender': selectedGender,
         'dateOfBirth': dateFormatter.format(DateTime.parse(dateOfBirth)),
         'heightInCm': double.parse(heightInCm),
         'weightInKg': double.parse(weightInKg),
@@ -165,9 +197,10 @@ class _InsertPageState extends State<InsertPage> {
         'notes': notes,
         'membershipStart': dateFormatter.format(startDate),
         'nextPaymentDue': dateFormatter.format(nextPaymentDueDate),
-        'subscriptionPlan': _selectedPlan,
+        'subscriptionPlan': selectedPlan,
         'createdAt': dateFormatter.format(DateTime.now()),
         'mobileNumber': _fullMobileNumber,
+        'totalPaid': paymentAmount,
       });
 
       _toastService.successToast("✅ Member has been added successfully!");
@@ -233,7 +266,7 @@ class _InsertPageState extends State<InsertPage> {
               ),
               const SizedBox(height: 12.0),
               DropdownInput(
-                hintText: 'Gender',
+                hintText: 'Select Gender',
                 selectedItem: _selectedGender,
                 itemOptions: _genderOptions,
                 onChanged: (value) {

@@ -45,7 +45,8 @@ class _ListPageState extends State<ListPage> {
     try {
       final currentUser = _authService.currentUser;
       if (currentUser == null) {
-        _toastService.warningToast("⚠️ Your session has expired. Please log in again.");
+        _toastService
+            .warningToast("⚠️ Your session has expired. Please log in again.");
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
         return;
       }
@@ -71,7 +72,7 @@ class _ListPageState extends State<ListPage> {
         return Member(
           fireID: doc.id,
           fullName: data['fullName'],
-         gender: data['gender']?.toString() ?? 'N/A',
+          gender: data['gender'].toString(),
           age: calculatedAge,
           height: data['heightInCm'].toString(),
           weight: data['weightInKg'].toString(),
@@ -81,6 +82,7 @@ class _ListPageState extends State<ListPage> {
           nextPayment: data['nextPaymentDue'],
           subscriptionPlan: data['subscriptionPlan'],
           mobileNumber: data['mobileNumber'],
+          totalPaid: data['totalPaid'],
         );
       }).toList();
 
@@ -131,14 +133,16 @@ class _ListPageState extends State<ListPage> {
     }
   }
 
-  void _showRemoveConfirmationDialog(BuildContext context, String name, String memberId) {
+  void _showRemoveConfirmationDialog(
+      BuildContext context, String name, String memberId) {
     showDialog(
       context: context,
       builder: (context) {
         return ConfirmationDialog(
           confirmationMessage: ConfirmationMessage(
             topic: '🗑️ Remove Member',
-            message: 'Are you sure you want to permanently remove $name ($memberId)? This action cannot be undone.',
+            message:
+                'Are you sure you want to permanently remove $name ($memberId)? This action cannot be undone.',
             option1: 'No, Keep',
             option2: 'Yes, Remove',
           ),
@@ -181,17 +185,26 @@ class _ListPageState extends State<ListPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.group_outlined, size: 48, color: Colors.grey),
+                              Icon(
+                                Icons.group_outlined,
+                                size: 48.0,
+                                color: Colors.grey,
+                              ),
                               SizedBox(height: 12),
                               Text(
                                 'No Members Found',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey,
+                                ),
                               ),
-                              SizedBox(height: 6),
+                              SizedBox(height: 6.0),
                               Text(
                                 'Start adding members or try searching by ID, name, mobile, goal, or notes.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 14, color: Colors.grey),
+                                style:
+                                    TextStyle(fontSize: 14, color: Colors.grey),
                               ),
                             ],
                           ),
@@ -199,15 +212,20 @@ class _ListPageState extends State<ListPage> {
                       : ListView.builder(
                           itemCount: _filteredMembers.length,
                           itemBuilder: (context, index) {
-                            final reversedIndex = _filteredMembers.length - 1 - index;
+                            final reversedIndex =
+                                _filteredMembers.length - 1 - index;
                             final member = _filteredMembers[reversedIndex];
-                            final isExpanded = _expandedMembers.contains(member.fireID);
+                            final isExpanded =
+                                _expandedMembers.contains(member.fireID);
 
                             return Container(
                               margin: const EdgeInsets.all(12.0),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                border: Border.all(color: const Color.fromARGB(255, 110, 132, 255), width: 2.0),
+                                border: Border.all(
+                                    color: const Color.fromARGB(
+                                        255, 110, 132, 255),
+                                    width: 2.0),
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                               child: Padding(
@@ -217,50 +235,70 @@ class _ListPageState extends State<ListPage> {
                                   children: [
                                     // BASIC INFO
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                         '${member.fullName} (${member.fireID})',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          '${member.fullName} (${member.fireID})',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16),
                                         ),
                                         IconButton(
-                                          icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
+                                          icon: Icon(isExpanded
+                                              ? Icons.expand_less
+                                              : Icons.expand_more),
                                           onPressed: () {
                                             setState(() {
                                               if (isExpanded) {
-                                                _expandedMembers.remove(member.fireID);
+                                                _expandedMembers
+                                                    .remove(member.fireID);
                                               } else {
-                                                _expandedMembers.add(member.fireID);
+                                                _expandedMembers
+                                                    .add(member.fireID);
                                               }
                                             });
                                           },
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 6),
+                                    const SizedBox(height: 2.0),
                                     Text('Mobile: ${member.mobileNumber}'),
                                     Text('Goal: ${member.goal}'),
-                                    if (member.notes.isNotEmpty) Text('Notes: ${member.notes}'),
+                                    if (member.notes.isNotEmpty)
+                                      Text('Notes: ${member.notes}'),
                                     // EXPANDED DETAILS
                                     if (isExpanded) ...[
-                                      const SizedBox(height: 12),
-                                     
+                                      const SizedBox(height: 12.0),
                                       Text('Age: ${member.age}'),
                                       Text('Gender: ${member.gender}'),
-                                      if (member.height.isNotEmpty) Text('Height: ${member.height} cm'),
-                                      if (member.weight.isNotEmpty) Text('Weight: ${member.weight} kg'),
-                                      Text('Membership Start: ${member.startDate}'),
-                                      Text('Next Payment Due: ${member.nextPayment}'),
-                                      Text('Subscription Plan: ${member.subscriptionPlan}'),
+                                      Text('Height: ${member.height} cm'),
+                                      Text('Weight: ${member.weight} kg'),
+                                      Text(
+                                          'Membership Start: ${member.startDate}'),
+                                      Text(
+                                          'Next Payment Due: ${member.nextPayment}'),
+                                      Text(
+                                          'Subscription Plan: ${member.subscriptionPlan}'),
+                                      Text(
+                                          'Total Paid: ${member.totalPaid.toStringAsFixed(2)}'),
                                       const SizedBox(height: 10),
                                       ElevatedButton.icon(
-                                        onPressed: () => _showRemoveConfirmationDialog(
-                                            context, member.fullName, member.fireID),
+                                        onPressed: () =>
+                                            _showRemoveConfirmationDialog(
+                                          context,
+                                          member.fullName,
+                                          member.fireID,
+                                        ),
                                         icon: const Icon(Icons.delete),
                                         label: const Text("Remove Member"),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: Colors.black,
                                           foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
+                                          ),
                                         ),
                                       ),
                                     ],

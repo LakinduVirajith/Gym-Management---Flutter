@@ -11,11 +11,12 @@ class Member {
   final String nextPayment;
   final String subscriptionPlan;
   final String mobileNumber;
+  final double totalPaid;
 
   Member({
     required this.fireID,
     required this.fullName,
-    required this.gender,
+    this.gender = '',
     this.age = 0,
     this.height = '',
     this.weight = '',
@@ -25,5 +26,6 @@ class Member {
     required this.nextPayment,
     required this.subscriptionPlan,
     this.mobileNumber = '',
+    this.totalPaid = 0,
   });
 }

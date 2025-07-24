@@ -34,14 +34,22 @@ class AppDateUtils {
   /// RETURNS THE NUMBER OF MONTHS CORRESPONDING TO A GIVEN SIBSCRIPTION PLAN.
   static int getMonthsFromPlan(String plan) {
     switch (plan.toLowerCase()) {
-      case '1month' || '1 Month Plan':
+      case '1month':
+      case '1 Month Plan':
         return 1;
-      case '3months' || '3 Months Plan':
+
+      case '3months':
+      case '3 Months Plan':
         return 3;
-      case '6months' || '6 Months Plan':
+
+      case '6months':
+      case '6 Months Plan':
         return 6;
-      case '1year' || '1 Year Plan':
+
+      case '1year':
+      case '1 Year Plan':
         return 12;
+
       default:
         return 1;
     }
