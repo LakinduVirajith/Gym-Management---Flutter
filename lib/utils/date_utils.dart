@@ -35,19 +35,19 @@ class AppDateUtils {
   static int getMonthsFromPlan(String plan) {
     switch (plan.toLowerCase()) {
       case '1month':
-      case '1 Month Plan':
+      case '1 month plan':
         return 1;
 
       case '3months':
-      case '3 Months Plan':
+      case '3 months plan':
         return 3;
 
       case '6months':
-      case '6 Months Plan':
+      case '6 months plan':
         return 6;
 
       case '1year':
-      case '1 Year Plan':
+      case '1 year plan':
         return 12;
 
       default:
