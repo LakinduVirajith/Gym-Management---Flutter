@@ -36,7 +36,10 @@ class _ContactUsPageState extends State<ContactUsPage> {
     );
 
     if (await canLaunchUrl(emailUri)) {
-      await launchUrl(emailUri);
+      await launchUrl(
+        emailUri,
+        mode: LaunchMode.externalApplication,
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("❌ Could not open email app.")),
@@ -111,9 +114,51 @@ class _ContactUsPageState extends State<ContactUsPage> {
               const SizedBox(height: 12),
               const Text("📍 Address: Gym HQ, Colombo, Sri Lanka"),
               const SizedBox(height: 6),
-              const Text("📞 Phone: +94 71 123 4567"),
+              GestureDetector(
+                onTap: () async {
+                  final Uri phoneUri = Uri(scheme: 'tel', path: '+94710961142');
+                  if (await canLaunchUrl(phoneUri)) {
+                    await launchUrl(phoneUri);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("❌ Could not launch phone dialer.")),
+                    );
+                  }
+                },
+                child: const Text(
+                  "📞 Phone: +94 71 096 1142",
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                 
+                  ),
+                ),
+              ),
               const SizedBox(height: 6),
-              const Text("✉️ Email: alccodelab@gmail.com"),
+              GestureDetector(
+                onTap: () async {
+                  final Uri emailLaunchUri = Uri(
+                    scheme: 'mailto',
+                    path: 'alccodelab@gmail.com',
+                    query: Uri.encodeFull('subject=Contact Inquiry'),
+                  );
+                  if (await canLaunchUrl(emailLaunchUri)) {
+                    await launchUrl(emailLaunchUri);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("❌ Could not open email app.")),
+                    );
+                  }
+                },
+                child: const Text(
+                  "✉️ Email: alccodelab@gmail.com",
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                    
+                  ),
+                ),
+              ),
             ],
           ),
         ),

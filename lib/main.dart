@@ -63,8 +63,7 @@ class MainState extends State<Main> {
   ];
 
   void _contactUs() {
-    Navigator.pushNamedAndRemoveUntil(
-        context, '/contact', (Route<dynamic> route) => false);
+   Navigator.pushNamed(context, '/contact');
   }
 
   Future<void> _subscriptionPlan() async {
